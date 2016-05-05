@@ -2,24 +2,35 @@
  ISKRobot(Il-Su-KKun Robot) (일수꾼봇)
 
  Created by Gomgom (https://gom2.net)
- Final released: 2016-05-05
- Version: v1.0.1 updating
+ Final released: 2016-05-06
+ Version: v1.1 updating
 """
 
-import sys, time, pickle, re
+#
+# IMPORT PARTS
+#
+import sys, time, pickle
 import logging
 from telegram.ext import Updater, CommandHandler
 from telegram import Emoji
 
+#
+# DEFINE PARTS
+#
 # exec has some information of command and instruction
-exec = (("추가", "[이름 금액]\n\t\t\t빚을 추가합니다."), ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."), ("부분", "[이름 금액]\n\t\t\t부분 상환 금액을 입력합니다."), ("상환", "[이름]\n\t\t\t목록을 삭제합니다."), ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
-ledger = { }
-
-# Checking parameters are or not, if there are, they are put in TOKEN(It's token of this bot) and ADMINID(It's Telegram ID of administrator, if you need)
-# Sample exec: python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11 abcd1234
+exec = (("추가", "[이름 금액] 순서\n\t\t\t빚을 추가합니다."), ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."), ("부분", "[이름 금액] 순서\n\t\t\t부분 상환 금액을 입력합니다."), ("상환", "[이름] 순서\n\t\t\t목록을 삭제합니다."), ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
+userLedger = { }
 TOKEN = ''
 ADMINID = ''
 
+# Check there is save or not
+with open("./debt.dat", 'rb') as f:
+    ledgerFromFile = pickle.load(f)
+    if userLedger != ledgerFromFile:
+        userLedger = ledgerFromFile
+
+# Checking parameters are or not, if there are, they are put in TOKEN(It's token of this bot) and ADMINID(It's Telegram ID of administrator, if you need)
+# Sample exec: python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11 abcd1234
 if len(sys.argv) == 1:
     print("토큰이 입력되지 않았습니다. 매개변수에 TOKEN, 관리자ID 순으로 입력해 주세요.")
     sys.exit()
@@ -35,26 +46,20 @@ if len(sys.argv) >= 2:
         print("매개변수가 잘못되었습니다. 매개변수에 TOKEN, 관리자ID 순으로 입력해 주세요.")
         sys.exit()
 
-# Check there is save or not
-with open("./debt.dat", 'rb') as f:
-    ledgerFromFile = pickle.load(f)
-    if ledger != ledgerFromFile:
-        ledger = ledgerFromFile
-
 # Enable logging
-logging.basicConfig(format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s', level = logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+#
+# FUNCTION PARTS
+#
 # memoryNow() will perform write time of now in ledger dictionary
-def memoryNow():
+def memoryNow(id):
+    ledger = userLedger[id]
     ledger['recent'] = time.strftime('%m / %d', time.localtime(time.time()))
+    userLedger[id] = ledger
     with open("./debt.dat", 'wb') as f:
-        pickle.dump(ledger, f)
-
-def checkItsMoney(money):
-
-    if p.match(money): return 1
-    else: return 0
+        pickle.dump(userLedger, f)
 
 # makeNumToMoney() will perform money will be shown like this (7500000 -> 7,500,000)
 def makeNumToMoney(money):
@@ -74,11 +79,20 @@ def makeNumToMoney(money):
         resNum += ledgerNum
     return resNum
 
+#
+# BOT HANDLER PARTS
+#
 # It will show /start
 def start(bot, update):
     startMes = '안녕하세요. 저는 일수꾼봇입니다. ' + Emoji.CAT_FACE_WITH_WRY_SMILE + '\n'
     startMes += '여러분들이 빌린 빚을 갚게 하려고 늘 노력하고 있답니다. :)\n'
     startMes += '도움말이 필요하시면 /help를 입력해 주세요. ^^'
+
+    for ownId in userLedger.keys():
+        if str(update.message.chat_id) == ownId: return bot.sendMessage(update.message.chat_id, text=startMes)
+    userLedger[str(update.message.chat_id)] = {}
+    startMes += '이 채팅/그룹에서는 이용이 처음이시네요. 새로운 ID가 만들어졌습니다.'
+
     bot.sendMessage(update.message.chat_id, text=startMes)
 
 # It will show /help
@@ -97,6 +111,15 @@ def input(bot, update, args):
         for i in range(0,len(args) // 2): int(args[(i*2)+1])
     except: return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
 
+    ledger = {}
+    checkUser = 0
+    for ownId in userLedger.keys():
+        if str(update.message.chat_id) == ownId:
+            ledger = userLedger[ownId]
+            checkUser = 1
+    if checkUser == 0:
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+
     for i in range(0,len(args) // 2):
         count = 0
         for person in ledger.keys():
@@ -105,11 +128,21 @@ def input(bot, update, args):
                 count = 1
         if count == 0:
             ledger[str(args[i*2])] = int(args[(i*2)+1])
-    memoryNow()
+    memoryNow(str(update.message.chat_id))
+    userLedger[str(update.message.chat_id)] = ledger
     bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
 
 # It will be performed when you type, /조회
 def view(bot, update):
+    ledger = {}
+    checkUser = 0
+    for ownId in userLedger.keys():
+        if str(update.message.chat_id) == ownId:
+            ledger = userLedger[ownId]
+            checkUser = 1
+    if checkUser == 0:
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+
     result = "\n\n" + ("*" * 19) + "\n"
     for person in ledger.keys():
         if person != 'recent':
@@ -125,6 +158,15 @@ def returnP(bot, update, args):
         for i in range(0,len(args) // 2): int(args[(i*2)+1])
     except: return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
 
+    ledger = {}
+    checkUser = 0
+    for ownId in userLedger.keys():
+        if str(update.message.chat_id) == ownId:
+            ledger = userLedger[ownId]
+            checkUser = 1
+    if checkUser == 0:
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+
     for i in range(0,len(args) // 2):
         count = 0
         for person in ledger.keys():
@@ -134,11 +176,21 @@ def returnP(bot, update, args):
                 bot.sendMessage(update.message.chat_id, text='%s(이)에 대한 부분 상환이 완료되었습니다.' % str(args[i*2]))
         if count == 0:
             bot.sendMessage(update.message.chat_id, text='%s은(는) 존재하지 않습니다. 다시 확인해 주세요.' % str(args[i*2]))
-    memoryNow()
+    memoryNow(str(update.message.chat_id))
+    userLedger[str(update.message.chat_id)] = ledger
 
 # It will be performed when you type, /상환 사람이름
 def remove(bot, update, args):
     if ADMINID != '0' and update.message.from_user.username != ADMINID: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+') # Checking you're owner or not
+
+    ledger = {}
+    checkUser = 0
+    for ownId in userLedger.keys():
+        if str(update.message.chat_id) == ownId:
+            ledger = userLedger[ownId]
+            checkUser = 1
+    if checkUser == 0:
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
     delList = [] # Trick for remove various person
 
@@ -153,18 +205,33 @@ def remove(bot, update, args):
             bot.sendMessage(update.message.chat_id, text='%s은(는) 존재하지 않습니다. 다시 확인해 주세요.' % str(args[i]))
     for person in delList: # also parts of trick
         del ledger[person]
-    memoryNow()
+    memoryNow(str(update.message.chat_id))
+    userLedger[str(update.message.chat_id)] = ledger
 
 # It will be performed when you type, /초기화
 def reset(bot, update):
     if ADMINID != '0' and update.message.from_user.username != ADMINID: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+') # Checking you're owner or not
+
+    ledger = {}
+    checkUser = 0
+    for ownId in userLedger.keys():
+        if str(update.message.chat_id) == ownId:
+            ledger = userLedger[ownId]
+            checkUser = 1
+    if checkUser == 0:
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+
     ledger.clear()
-    memoryNow()
+    memoryNow(str(update.message.chat_id))
+    userLedger[str(update.message.chat_id)] = ledger
     bot.sendMessage(update.message.chat_id, text='초기화 작업을 완료했습니다.')
 
 def error(bot, update, error):
     logger.warn('Update "%s" caused error "%s"' % (update, error))
 
+#
+# MAIN PARTS
+#
 # It is main function of this program
 def main():
     updater = Updater(TOKEN)

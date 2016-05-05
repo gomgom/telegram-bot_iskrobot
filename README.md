@@ -7,6 +7,9 @@
 
 
 ## 최근 변경사항
+version 1.1  :
+ - [추가 / 부분 / 상환] 질의에서, [이름 꾼돈] 순서대로 1개 이상의 요소를 받아올 수 있습니다.
+ - 이제 채팅방 별로 다른 데이터베이스를 활용하고 있습니다. 채팅방 별로 꾼돈을 다르게 설정해 보세요.
 version 1.0.1: Dockerfile 추가 및 간단한 소스 수정이 있었습니다.
 
 
@@ -30,9 +33,9 @@ python-telegram-bot 모듈은 본 소스 코드에는 포함되어 있지 않으
 이 두 가지 값을 알고 계신다면(토큰값만 있어도 사용은 가능합니다.), 다음과 같은 명령어 샘플로 실행이 가능합니다.
 
 
-  python ISKRobot.py <토큰값> (아이디)
+    python ISKRobot.py <토큰값> (아이디)
 
-  예) python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11 abcd1234
+      예) python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11 abcd1234
 
     (* 토큰값과 아이디는 샘플입니다. (아이디) 부분은 필요시 생략 가능합니다.)
 
@@ -53,13 +56,13 @@ python-telegram-bot 모듈은 본 소스 코드에는 포함되어 있지 않으
 Docker가 설치되어 있는 리눅스 콘솔에서 본 Git 저장소를 다운받은 이후,
 
 
-  sudo docker build --tag <이미지 태그> .
+    sudo docker build --tag <이미지 태그> .
 
-  sudo docker run --name <프로세스 이름> -d -e TOKENKEY='<토큰값>' -e ADMINID='(아이디)' -v /etc/localtime:/etc/localtime <이미지 태그>
+    sudo docker run --name <프로세스 이름> -d -e TOKENKEY='<토큰값>' -e ADMINID='(아이디)' -v /etc/localtime:/etc/localtime <이미지 태그>
 
-  예) sudo docker build --tag iskbot:1.0 .
+      예) sudo docker build --tag iskbot:1.0 .
 
-      sudo docker run --name iskbot1-0 -d -e TOKENKEY='12345678:A1B2C3D4E5F6G7H8i9_j10k11' -e ADMINID='abcd1234' -v /etc/localtime:/etc/localtime iskbot:1.0
+          sudo docker run --name iskbot1-0 -d -e TOKENKEY='12345678:A1B2C3D4E5F6G7H8i9_j10k11' -e ADMINID='abcd1234' -v /etc/localtime:/etc/localtime iskbot:1.0
 
     (* 우분투 배포판 기준. 이미지 태그, 프로세스 이름, 토큰값, 아이디는 샘플입니다. ADMINID='(아이디)' 부분은 필요시 생략 가능합니다.)
 
@@ -68,13 +71,13 @@ Docker가 설치되어 있는 리눅스 콘솔에서 본 Git 저장소를 다운
 
 
 ## 명령어 모음
-/start : 처음 봇을 시작하면 만나는 메시지입니다.
+    /start : 처음 봇을 시작하면 만나는 메시지입니다. 각 채팅방에서 봇을 처음 만들때 반드시 입력해 주어야 합니다.
 
-/help : 각종 명령어에 대한 도움말을 표시하고 있습니다.
+    /help : 각종 명령어에 대한 도움말을 표시하고 있습니다.
 
-/기타 명령어 : /help를 입력해 확인하실 수 있습니다.
+    /기타 명령어 : /help를 입력해 확인하실 수 있습니다.
 
- * 봇을 그 서버에서 처음 실행한 경우, /조회를 이용할 경우 에러가 발생할 수 있습니다. 반드시 첫 사용시에는 /초기화를 한 이후에 실행하여 주십시오.)
+    (* 봇을 그 서버에서 처음 실행한 경우, /조회를 이용할 경우 에러가 발생할 수 있습니다. 반드시 첫 사용시에는 /초기화를 한 이후에 실행하여 주십시오.)
 
 
 ## 기타 자세한 정보
