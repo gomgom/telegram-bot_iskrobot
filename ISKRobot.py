@@ -3,10 +3,10 @@
 
  Created by Gomgom (https://gom2.net)
  Final released: 2016-05-05
- Version: v1.0.1
+ Version: v1.0.1 updating
 """
 
-import sys, time, pickle
+import sys, time, pickle, re
 import logging
 from telegram.ext import Updater, CommandHandler
 from telegram import Emoji
@@ -51,6 +51,11 @@ def memoryNow():
     with open("./debt.dat", 'wb') as f:
         pickle.dump(ledger, f)
 
+def checkItsMoney(money):
+
+    if p.match(money): return 1
+    else: return 0
+
 # makeNumToMoney() will perform money will be shown like this (7500000 -> 7,500,000)
 def makeNumToMoney(money):
     resNum = ''
@@ -86,16 +91,20 @@ def help(bot, update):
 
 # It will be performed when you type, /추가 사람이름 금액
 def input(bot, update, args):
-    if ADMINID != '0' and update.message.from_user.username != ADMINID:
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
-    count = 0
-    for person in ledger.keys():
-        if person == str(args[0]):
-            ledger[person] += int(args[1])
-            count = 1
-            break
-    if count == 0:
-        ledger[str(args[0])] = int(args[1])
+    if ADMINID != '0' and update.message.from_user.username != ADMINID: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+') # Checking you're owner or not
+    if len(args) % 2 == 1: return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') # Checking args number
+    try: # For Catching it's number or not
+        for i in range(0,len(args) // 2): int(args[(i*2)+1])
+    except: return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
+
+    for i in range(0,len(args) // 2):
+        count = 0
+        for person in ledger.keys():
+            if person == str(args[i*2]):
+                ledger[person] += int(args[(i*2)+1])
+                count = 1
+        if count == 0:
+            ledger[str(args[i*2])] = int(args[(i*2)+1])
     memoryNow()
     bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
 
@@ -110,38 +119,45 @@ def view(bot, update):
 
 # It will be performed when you type, /부분 사람이름 금액
 def returnP(bot, update, args):
-    if ADMINID != '0' and update.message.from_user.username != ADMINID:
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
-    count = 0
-    for person in ledger.keys():
-        if person == str(args[0]):
-            ledger[person] -= int(args[1])
-            count = 1
-            memoryNow()
-            bot.sendMessage(update.message.chat_id, text='부분 상환이 완료되었습니다.')
-            break
-    if count == 0:
-        bot.sendMessage(update.message.chat_id, text='상환할 대상이 없습니다.')
+    if ADMINID != '0' and update.message.from_user.username != ADMINID: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+') # Checking you're owner or not
+    if len(args) % 2 == 1: return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') # Checking args number
+    try: # For Catching it's number or not
+        for i in range(0,len(args) // 2): int(args[(i*2)+1])
+    except: return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
+
+    for i in range(0,len(args) // 2):
+        count = 0
+        for person in ledger.keys():
+            if person == str(args[i*2]):
+                ledger[person] -= int(args[(i*2)+1])
+                count = 1
+                bot.sendMessage(update.message.chat_id, text='%s(이)에 대한 부분 상환이 완료되었습니다.' % str(args[i*2]))
+        if count == 0:
+            bot.sendMessage(update.message.chat_id, text='%s은(는) 존재하지 않습니다. 다시 확인해 주세요.' % str(args[i*2]))
+    memoryNow()
 
 # It will be performed when you type, /상환 사람이름
 def remove(bot, update, args):
-    if ADMINID != '0' and update.message.from_user.username != ADMINID:
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
-    count = 0
-    for person in ledger.keys():
-        if person == str(args[0]):
-            del ledger[person]
-            count = 1
-            memoryNow()
-            bot.sendMessage(update.message.chat_id, text='전체 상환이 완료되었습니다.')
-            break
-    if count == 0:
-        bot.sendMessage(update.message.chat_id, text='상환할 대상이 없습니다.')
+    if ADMINID != '0' and update.message.from_user.username != ADMINID: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+') # Checking you're owner or not
+
+    delList = [] # Trick for remove various person
+
+    for i in range(0,len(args)):
+        count = 0
+        for person in ledger.keys():
+            if person == str(args[i]):
+                delList.append(str(args[i]))
+                count = 1
+                bot.sendMessage(update.message.chat_id, text='%s(이)에 대한 전체 상환이 완료되었습니다.' % str(args[i]))
+        if count == 0:
+            bot.sendMessage(update.message.chat_id, text='%s은(는) 존재하지 않습니다. 다시 확인해 주세요.' % str(args[i]))
+    for person in delList: # also parts of trick
+        del ledger[person]
+    memoryNow()
 
 # It will be performed when you type, /초기화
 def reset(bot, update):
-    if ADMINID != '0' and update.message.from_user.username != ADMINID:
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
+    if ADMINID != '0' and update.message.from_user.username != ADMINID: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+') # Checking you're owner or not
     ledger.clear()
     memoryNow()
     bot.sendMessage(update.message.chat_id, text='초기화 작업을 완료했습니다.')
