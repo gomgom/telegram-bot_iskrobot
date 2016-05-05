@@ -91,6 +91,7 @@ def start(bot, update):
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId: return bot.sendMessage(update.message.chat_id, text=startMes)
     userLedger[str(update.message.chat_id)] = {}
+    memoryNow(str(update.message.chat_id))
     startMes += '이 채팅/그룹에서는 이용이 처음이시네요. 새로운 ID가 만들어졌습니다.'
 
     bot.sendMessage(update.message.chat_id, text=startMes)
