@@ -2,17 +2,23 @@
  ISKRobot(Il-Su-KKun Robot) (일수꾼봇)
 
  Created by Gomgom (https://gom2.net)
- Final released: 2016-05-04
- Version: v1.0
+ Final released: 2016-05-05
+ Version: v1.0.1
 """
 
-import pickle, time, sys
+import sys, time, pickle
 import logging
 from telegram.ext import Updater, CommandHandler
 from telegram import Emoji
 
+# exec has some information of command and instruction
+exec = (("추가", "[이름 금액]\n\t\t\t빚을 추가합니다."), ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."), ("부분", "[이름 금액]\n\t\t\t부분 상환 금액을 입력합니다."), ("상환", "[이름]\n\t\t\t목록을 삭제합니다."), ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
+ledger = { }
+
 # Checking parameters are or not, if there are, they are put in TOKEN(It's token of this bot) and ADMINID(It's Telegram ID of administrator, if you need)
 # Sample exec: python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11 abcd1234
+TOKEN = ''
+ADMINID = ''
 
 if len(sys.argv) == 1:
     print("토큰이 입력되지 않았습니다. 매개변수에 TOKEN, 관리자ID 순으로 입력해 주세요.")
@@ -29,12 +35,8 @@ if len(sys.argv) >= 2:
         print("매개변수가 잘못되었습니다. 매개변수에 TOKEN, 관리자ID 순으로 입력해 주세요.")
         sys.exit()
 
-# exec has some information of command and instruction
-exec = (("추가", "[이름 금액]\n\t\t\t빚을 추가합니다."), ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."), ("부분", "[이름 금액]\n\t\t\t부분 상환 금액을 입력합니다."), ("상환", "[이름]\n\t\t\t목록을 삭제합니다."), ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
-ledger = { }
-
 # Check there is save or not
-with open("debt.dat", 'rb') as f:
+with open("./debt.dat", 'rb') as f:
     ledgerFromFile = pickle.load(f)
     if ledger != ledgerFromFile:
         ledger = ledgerFromFile
@@ -46,7 +48,7 @@ logger = logging.getLogger(__name__)
 # memoryNow() will perform write time of now in ledger dictionary
 def memoryNow():
     ledger['recent'] = time.strftime('%m / %d', time.localtime(time.time()))
-    with open("debt.dat", 'wb') as f:
+    with open("./debt.dat", 'wb') as f:
         pickle.dump(ledger, f)
 
 # makeNumToMoney() will perform money will be shown like this (7500000 -> 7,500,000)
@@ -150,7 +152,6 @@ def error(bot, update, error):
 # It is main function of this program
 def main():
     updater = Updater(TOKEN)
-
     dp = updater.dispatcher
 
     dp.addHandler(CommandHandler("start", start))
