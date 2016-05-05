@@ -14,6 +14,8 @@ from telegram import Emoji
 # Checking parameters are or not, if there are, they are put in TOKEN(It's token of this bot) and ADMINID(It's Telegram ID of administrator, if you need)
 # Sample exec: python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11 abcd1234
 
+sys.setdefaultencoding("utf-8")
+
 if len(sys.argv) == 1:
     print("토큰이 입력되지 않았습니다. 매개변수에 TOKEN, 관리자ID 순으로 입력해 주세요.")
     sys.exit()
