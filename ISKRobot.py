@@ -92,7 +92,7 @@ def start(bot, update):
         if str(update.message.chat_id) == ownId: return bot.sendMessage(update.message.chat_id, text=startMes)
     userLedger[str(update.message.chat_id)] = {}
     memoryNow(str(update.message.chat_id))
-    startMes += '이 채팅/그룹에서는 이용이 처음이시네요. 새로운 ID가 만들어졌습니다.'
+    startMes += '\n\n이 채팅/그룹에서는 이용이 처음이시네요. 새로운 ID가 만들어졌습니다.'
 
     bot.sendMessage(update.message.chat_id, text=startMes)
 
@@ -129,8 +129,8 @@ def input(bot, update, args):
                 count = 1
         if count == 0:
             ledger[str(args[i*2])] = int(args[(i*2)+1])
-    memoryNow(str(update.message.chat_id))
     userLedger[str(update.message.chat_id)] = ledger
+    memoryNow(str(update.message.chat_id))
     bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
 
 # It will be performed when you type, /조회
@@ -177,8 +177,8 @@ def returnP(bot, update, args):
                 bot.sendMessage(update.message.chat_id, text='%s(이)에 대한 부분 상환이 완료되었습니다.' % str(args[i*2]))
         if count == 0:
             bot.sendMessage(update.message.chat_id, text='%s은(는) 존재하지 않습니다. 다시 확인해 주세요.' % str(args[i*2]))
-    memoryNow(str(update.message.chat_id))
     userLedger[str(update.message.chat_id)] = ledger
+    memoryNow(str(update.message.chat_id))
 
 # It will be performed when you type, /상환 사람이름
 def remove(bot, update, args):
@@ -206,8 +206,8 @@ def remove(bot, update, args):
             bot.sendMessage(update.message.chat_id, text='%s은(는) 존재하지 않습니다. 다시 확인해 주세요.' % str(args[i]))
     for person in delList: # also parts of trick
         del ledger[person]
-    memoryNow(str(update.message.chat_id))
     userLedger[str(update.message.chat_id)] = ledger
+    memoryNow(str(update.message.chat_id))
 
 # It will be performed when you type, /초기화
 def reset(bot, update):
@@ -223,8 +223,8 @@ def reset(bot, update):
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
     ledger.clear()
-    memoryNow(str(update.message.chat_id))
     userLedger[str(update.message.chat_id)] = ledger
+    memoryNow(str(update.message.chat_id))
     bot.sendMessage(update.message.chat_id, text='초기화 작업을 완료했습니다.')
 
 def error(bot, update, error):
