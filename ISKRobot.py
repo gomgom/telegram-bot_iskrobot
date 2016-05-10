@@ -3,7 +3,7 @@
 
  Created by Gomgom (https://gom2.net)
  Final released: 2016-05-06
- Version: v1.2 updating
+ Version: v1.2 updated
 """
 
 #
@@ -18,7 +18,7 @@ from telegram import Emoji
 # DEFINE PARTS
 #
 # exec has some information of command and instruction
-exec = (("추가", "[이름 금액] 순서\n\t\t\t빚을 추가합니다."), ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."), ("명세", "[ ]\n\t\t\t최근 추가/삭제 내역을 조회합니다."),("부분", "[이름 금액] 순서\n\t\t\t부분 상환 금액을 입력합니다."), ("상환", "[이름] 순서\n\t\t\t목록을 삭제합니다."), ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
+exec = (("추가", "[이름 금액] 순서\n\t\t\t빚을 추가합니다.\n\t\t\t마지막에 '-t 내용' 추가로 태그 추가 가능.\n\t\t\t단, 태그는 띄어쓰기 불가."), ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."), ("명세", "[ ]\n\t\t\t최근 추가/삭제 내역을 조회합니다."),("부분", "[이름 금액] 순서\n\t\t\t부분 상환 금액을 입력합니다."), ("상환", "[이름] 순서\n\t\t\t목록을 삭제합니다."), ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
 userLedger = { }
 userStatement = { }
 TOKEN = ''
@@ -95,10 +95,12 @@ def start(bot, update):
     startMes += '여러분들이 빌린 빚을 갚게 하려고 늘 노력하고 있답니다. :)\n'
     startMes += '도움말이 필요하시면 /help를 입력해 주세요. ^^'
 
+    for ownId in userStatement.keys():
+        if str(update.message.chat_id) == ownId: return bot.sendMessage(update.message.chat_id, text=startMes)
+    userStatement[str(update.message.chat_id)] = []
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId: return bot.sendMessage(update.message.chat_id, text=startMes)
     userLedger[str(update.message.chat_id)] = {}
-    userStatement[str(update.message.chat_id)] = []
     memoryNow(str(update.message.chat_id))
     startMes += '\n\n이 채팅/그룹에서는 이용이 처음이시네요. 새로운 ID가 만들어졌습니다.'
 
@@ -117,7 +119,8 @@ def input(bot, update, args):
     if ADMINID != '0' and update.message.from_user.username != ADMINID: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+') # Checking you're owner or not
     if len(args) % 2 == 1: return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') # Checking args number
     try: # For Catching it's number or not
-        for i in range(0,len(args) // 2): int(args[(i*2)+1])
+        for i in range(0,(len(args) - 2) // 2): int(args[(i*2)+1])
+        if (str(args[len(args) - 2]) != "-t"): int(args[len(args) - 1])
     except: return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
 
     ledger = {}
@@ -126,12 +129,16 @@ def input(bot, update, args):
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId:
             ledger = userLedger[ownId]
+            if not userStatement[ownId]: userStatement[ownId] = []
             statement = userStatement[ownId]
             checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
-    for i in range(0,len(args) // 2):
+    length = len(args)
+
+    if str(args[len(args) - 2]) == "-t": length = len(args) - 2
+    for i in range(0,length // 2):
         count = 0
         for person in ledger.keys():
             if person == str(args[i*2]):
@@ -141,8 +148,9 @@ def input(bot, update, args):
             ledger[str(args[i*2])] = int(args[(i*2)+1])
 
     state = " " + exec[0][0] + " : "
-    for i in args:
-        state += i + " "
+    if str(args[len(args) - 2]) == "-t": state = state + "(" + str(args[len(args) - 1]) + ") "
+    for i in range(0,length):
+        state += args[i] + " "
     state += "\n"
     if len(statement) < 10:
         statement.append(state)
@@ -155,11 +163,13 @@ def input(bot, update, args):
     memoryNow(str(update.message.chat_id))
     bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
 
+# It will be performed when you type, /명세, it shows your states.
 def latest(bot, update):
     statement = []
     checkUser = 0
-    for ownId in userStatement.keys():
+    for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId:
+            if not userStatement[ownId]: userStatement[ownId] = []
             statement = userStatement[ownId]
             checkUser = 1
     if checkUser == 0:
@@ -203,6 +213,7 @@ def returnP(bot, update, args):
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId:
             ledger = userLedger[ownId]
+            if not userStatement[ownId]: userStatement[ownId] = []
             statement = userStatement[ownId]
             checkUser = 1
     if checkUser == 0:
@@ -242,6 +253,7 @@ def remove(bot, update, args):
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId:
             ledger = userLedger[ownId]
+            if not userStatement[ownId]: userStatement[ownId] = []
             statement = userStatement[ownId]
             checkUser = 1
     if checkUser == 0:
@@ -285,6 +297,7 @@ def reset(bot, update):
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId:
             ledger = userLedger[ownId]
+            if not userStatement[ownId]: userStatement[ownId] = []
             statement = userStatement[ownId]
             checkUser = 1
     if checkUser == 0:
@@ -292,7 +305,7 @@ def reset(bot, update):
 
     ledger.clear()
 
-    state = " * " + exec[5][0] + " * \n"
+    state = "  ** " + exec[5][0] + " ** \n"
     if len(statement) < 10:
         statement.append(state)
     else:
