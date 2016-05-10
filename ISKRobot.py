@@ -3,7 +3,7 @@
 
  Created by Gomgom (https://gom2.net)
  Final released: 2016-05-06
- Version: v1.1 updating
+ Version: v1.2 updating
 """
 
 #
@@ -18,8 +18,9 @@ from telegram import Emoji
 # DEFINE PARTS
 #
 # exec has some information of command and instruction
-exec = (("추가", "[이름 금액] 순서\n\t\t\t빚을 추가합니다."), ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."), ("부분", "[이름 금액] 순서\n\t\t\t부분 상환 금액을 입력합니다."), ("상환", "[이름] 순서\n\t\t\t목록을 삭제합니다."), ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
+exec = (("추가", "[이름 금액] 순서\n\t\t\t빚을 추가합니다."), ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."), ("명세", "[ ]\n\t\t\t최근 추가/삭제 내역을 조회합니다."),("부분", "[이름 금액] 순서\n\t\t\t부분 상환 금액을 입력합니다."), ("상환", "[이름] 순서\n\t\t\t목록을 삭제합니다."), ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
 userLedger = { }
+userStatement = { }
 TOKEN = ''
 ADMINID = ''
 
@@ -28,6 +29,10 @@ with open("./debt.dat", 'rb') as f:
     ledgerFromFile = pickle.load(f)
     if userLedger != ledgerFromFile:
         userLedger = ledgerFromFile
+with open("./state.dat", 'rb') as f:
+    stateFromFile = pickle.load(f)
+    if userStatement != stateFromFile:
+        userStatement = stateFromFile
 
 # Checking parameters are or not, if there are, they are put in TOKEN(It's token of this bot) and ADMINID(It's Telegram ID of administrator, if you need)
 # Sample exec: python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11 abcd1234
@@ -60,6 +65,8 @@ def memoryNow(id):
     userLedger[id] = ledger
     with open("./debt.dat", 'wb') as f:
         pickle.dump(userLedger, f)
+    with open("./state.dat", 'wb') as f:
+        pickle.dump(userStatement, f)
 
 # makeNumToMoney() will perform money will be shown like this (7500000 -> 7,500,000)
 def makeNumToMoney(money):
@@ -91,6 +98,7 @@ def start(bot, update):
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId: return bot.sendMessage(update.message.chat_id, text=startMes)
     userLedger[str(update.message.chat_id)] = {}
+    userStatement[str(update.message.chat_id)] = []
     memoryNow(str(update.message.chat_id))
     startMes += '\n\n이 채팅/그룹에서는 이용이 처음이시네요. 새로운 ID가 만들어졌습니다.'
 
@@ -113,10 +121,12 @@ def input(bot, update, args):
     except: return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
 
     ledger = {}
+    statement = []
     checkUser = 0
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId:
             ledger = userLedger[ownId]
+            statement = userStatement[ownId]
             checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
@@ -129,9 +139,37 @@ def input(bot, update, args):
                 count = 1
         if count == 0:
             ledger[str(args[i*2])] = int(args[(i*2)+1])
+
+    state = " " + exec[0][0] + " : "
+    for i in args:
+        state += i + " "
+    state += "\n"
+    if len(statement) < 10:
+        statement.append(state)
+    else:
+        del statement[0]
+        statement.append(state)
+
     userLedger[str(update.message.chat_id)] = ledger
+    userStatement[str(update.message.chat_id)] = statement
     memoryNow(str(update.message.chat_id))
     bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
+
+def latest(bot, update):
+    statement = []
+    checkUser = 0
+    for ownId in userStatement.keys():
+        if str(update.message.chat_id) == ownId:
+            statement = userStatement[ownId]
+            checkUser = 1
+    if checkUser == 0:
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+
+    result = "\n\n" + ("#" * 19) + "\n"
+    for state in statement:
+        result += state
+    result += "#" * 19
+    bot.sendMessage(update.message.chat_id, text='최근 명세서입니다. (' + userLedger[str(update.message.chat_id)]['recent'] + ' 기준)' + result)
 
 # It will be performed when you type, /조회
 def view(bot, update):
@@ -160,10 +198,12 @@ def returnP(bot, update, args):
     except: return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
 
     ledger = {}
+    statement = []
     checkUser = 0
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId:
             ledger = userLedger[ownId]
+            statement = userStatement[ownId]
             checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
@@ -177,7 +217,19 @@ def returnP(bot, update, args):
                 bot.sendMessage(update.message.chat_id, text='%s(이)에 대한 부분 상환이 완료되었습니다.' % str(args[i*2]))
         if count == 0:
             bot.sendMessage(update.message.chat_id, text='%s은(는) 존재하지 않습니다. 다시 확인해 주세요.' % str(args[i*2]))
+
+    state = " " + exec[3][0] + "상환 : "
+    for i in args:
+        state += i + " "
+    state += "\n"
+    if len(statement) < 10:
+        statement.append(state)
+    else:
+        del statement[0]
+        statement.append(state)
+
     userLedger[str(update.message.chat_id)] = ledger
+    userStatement[str(update.message.chat_id)] = statement
     memoryNow(str(update.message.chat_id))
 
 # It will be performed when you type, /상환 사람이름
@@ -185,10 +237,12 @@ def remove(bot, update, args):
     if ADMINID != '0' and update.message.from_user.username != ADMINID: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+') # Checking you're owner or not
 
     ledger = {}
+    statement = []
     checkUser = 0
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId:
             ledger = userLedger[ownId]
+            statement = userStatement[ownId]
             checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
@@ -206,7 +260,19 @@ def remove(bot, update, args):
             bot.sendMessage(update.message.chat_id, text='%s은(는) 존재하지 않습니다. 다시 확인해 주세요.' % str(args[i]))
     for person in delList: # also parts of trick
         del ledger[person]
+
+    state = " 전체" + exec[4][0] + " : "
+    for i in args:
+        state += i + " "
+    state += "\n"
+    if len(statement) < 10:
+        statement.append(state)
+    else:
+        del statement[0]
+        statement.append(state)
+
     userLedger[str(update.message.chat_id)] = ledger
+    userStatement[str(update.message.chat_id)] = statement
     memoryNow(str(update.message.chat_id))
 
 # It will be performed when you type, /초기화
@@ -214,16 +280,27 @@ def reset(bot, update):
     if ADMINID != '0' and update.message.from_user.username != ADMINID: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+') # Checking you're owner or not
 
     ledger = {}
+    statement = []
     checkUser = 0
     for ownId in userLedger.keys():
         if str(update.message.chat_id) == ownId:
             ledger = userLedger[ownId]
+            statement = userStatement[ownId]
             checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
     ledger.clear()
+
+    state = " * " + exec[5][0] + " * \n"
+    if len(statement) < 10:
+        statement.append(state)
+    else:
+        del statement[0]
+        statement.append(state)
+
     userLedger[str(update.message.chat_id)] = ledger
+    userStatement[str(update.message.chat_id)] = statement
     memoryNow(str(update.message.chat_id))
     bot.sendMessage(update.message.chat_id, text='초기화 작업을 완료했습니다.')
 
@@ -242,9 +319,10 @@ def main():
     dp.addHandler(CommandHandler("help", help))
     dp.addHandler(CommandHandler(exec[0][0], input, pass_args=True))
     dp.addHandler(CommandHandler(exec[1][0], view))
-    dp.addHandler(CommandHandler(exec[2][0], returnP, pass_args=True))
-    dp.addHandler(CommandHandler(exec[3][0], remove, pass_args=True))
-    dp.addHandler(CommandHandler(exec[4][0], reset))
+    dp.addHandler(CommandHandler(exec[2][0], latest))
+    dp.addHandler(CommandHandler(exec[3][0], returnP, pass_args=True))
+    dp.addHandler(CommandHandler(exec[4][0], remove, pass_args=True))
+    dp.addHandler(CommandHandler(exec[5][0], reset))
     dp.addErrorHandler(error)
 
     updater.start_polling()
