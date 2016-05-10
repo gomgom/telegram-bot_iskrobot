@@ -7,6 +7,12 @@
 
 
 ## 최근 변경사항
+version 1.2  :
+ - 이제 [추가] 질의에서 태그를 사용할 수 있습니다. 마지막에 '-t 입력할내용(띄어쓰기불가)'만 추가하면 됩니다.
+ - [명세(/명세)] 질의를 통해, 최근 10건간의 추가 상환 내역을 확인할 수 있습니다.
+ - 저장할 때에 발생할 수 있는 문제를 수정하였습니다.
+ - 구버전(1.1)과의 호환성을 보장하였습니다.
+
 version 1.1  :
  - [추가 / 부분 / 상환] 질의에서, [이름 꾼돈] 순서대로 1개 이상의 요소를 받아올 수 있습니다.
  - 이제 채팅방 별로 다른 데이터베이스를 활용하고 있습니다. 채팅방 별로 꾼돈을 다르게 설정해 보세요.
@@ -46,13 +52,16 @@ python-telegram-bot 모듈은 본 소스 코드에는 포함되어 있지 않으
 토큰은 필수이지만, 관리자 ID를 설정하지 않으실 수도 있습니다.
 그 경우에는 "관리자가 등록되지 않았습니다. 모든 사람이 추가, 상환 등의 이용이 가능합니다."라는 응답이 나오며 실행되며, 모든 사람이 추가, 상환 등의 작업이 가능합니다.
 
-모든 기록은 debt.dat에 저장되어 관리되고 있습니다. 프로그램을 종료한 이후에도, 다시 실행할 때 그 파일에서 자료를 받아오므로, 활용에 유의하시기 바랍니다.
+모든 기록은 debt.dat 및 state.dat에 저장되어 관리되고 있습니다. 프로그램을 종료한 이후에도, 다시 실행할 때 그 파일에서 자료를 받아오므로, 활용에 유의하시기 바랍니다.
+
+ver 1.1에서 1.2로 넘어오시는 분들은 state.dat 파일이 꼭 유지될 수 있도록 유의하시기 바랍니다.
+기존에 사용하시던 debt.dat는 그대로 활용하셔야 합니다. 그렇지 않으면, 지금까지 기록했던 자료들이 전부 소실됩니다.
 
 
 ## Docker를 이용한 봇 사용방법
-리눅스 배포판을 활용하는 경우, 본 봇은 Docker를 통해 이미지 관리가 가능합니다. 본 소스의 Dockerfile은 Docker Hub의 Python:3.5.1을 활용하여 구축되어 있습니다.
+리눅스 배포판을 활용하는 경우, 본 봇은 Docker를 통해 이미지 관리가 가능합니다. 본 소스의 Dockerfile은 Docker Hub의 Python:3.5.1-slim을 활용하여 구축되어 있습니다.
 
-핵심적인 ISKRobot.py와 debt.dat를 빌드된 Docker 이미지에 저장해 자동으로 실행되도록 활용이 가능합니다.
+핵심적인 ISKRobot.py와 debt.dat, state.dat를 빌드된 Docker 이미지에 저장해 자동으로 실행되도록 활용이 가능합니다.
 
 Docker가 설치되어 있는 리눅스 콘솔에서 본 Git 저장소를 다운받은 이후,
 
@@ -61,14 +70,16 @@ Docker가 설치되어 있는 리눅스 콘솔에서 본 Git 저장소를 다운
 
     sudo docker run --name <프로세스 이름> -d -e TOKENKEY='<토큰값>' -e ADMINID='(아이디)' -v /etc/localtime:/etc/localtime <이미지 태그>
 
-      예) sudo docker build --tag iskbot:1.0 .
+      예) sudo docker build --tag iskrobot:1.2 .
 
-          sudo docker run --name iskbot1-0 -d -e TOKENKEY='12345678:A1B2C3D4E5F6G7H8i9_j10k11' -e ADMINID='abcd1234' -v /etc/localtime:/etc/localtime iskbot:1.0
+          sudo docker run --name iskrobot-1-2 -d -e TOKENKEY='12345678:A1B2C3D4E5F6G7H8i9_j10k11' -e ADMINID='abcd1234' -v /etc/localtime:/etc/localtime iskrobot:1.2
 
     (* 우분투 배포판 기준. 이미지 태그, 프로세스 이름, 토큰값, 아이디는 샘플입니다. ADMINID='(아이디)' 부분은 필요시 생략 가능합니다.)
 
 
 를 실행해주시면 백그라운드 데몬으로 도커를 실행하실 수 있습니다.
+
+또는 간단하게 bash build_docker.sh 기능을 활용하여 업데이트도 가능합니다. (sh 파일 내용 참조 후 수정하여 사용 요망)
 
 
 ## 명령어 모음
