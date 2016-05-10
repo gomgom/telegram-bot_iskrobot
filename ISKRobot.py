@@ -2,7 +2,7 @@
  ISKRobot(Il-Su-KKun Robot) (일수꾼봇)
 
  Created by Gomgom (https://gom2.net)
- Final released: 2016-05-06
+ Final released: 2016-05-10
  Version: v1.2 updated
 """
 
