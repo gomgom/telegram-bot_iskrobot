@@ -95,11 +95,11 @@ def start(bot, update):
     startMes += '여러분들이 빌린 빚을 갚게 하려고 늘 노력하고 있답니다. :)\n'
     startMes += '도움말이 필요하시면 /help를 입력해 주세요. ^^'
 
-    for ownId in userStatement.keys():
-        if str(update.message.chat_id) == ownId: return bot.sendMessage(update.message.chat_id, text=startMes)
+    if str(update.message.chat_id) in userStatement.keys():
+        return bot.sendMessage(update.message.chat_id, text=startMes)
     userStatement[str(update.message.chat_id)] = []
-    for ownId in userLedger.keys():
-        if str(update.message.chat_id) == ownId: return bot.sendMessage(update.message.chat_id, text=startMes)
+    if str(update.message.chat_id) in userLedger.keys():
+        return bot.sendMessage(update.message.chat_id, text=startMes)
     userLedger[str(update.message.chat_id)] = {}
     memoryNow(str(update.message.chat_id))
     startMes += '\n\n이 채팅/그룹에서는 이용이 처음이시네요. 새로운 ID가 만들어졌습니다.'
@@ -126,12 +126,11 @@ def input(bot, update, args):
     ledger = {}
     statement = []
     checkUser = 0
-    for ownId in userLedger.keys():
-        if str(update.message.chat_id) == ownId:
-            ledger = userLedger[ownId]
-            if not userStatement[ownId]: userStatement[ownId] = []
-            statement = userStatement[ownId]
-            checkUser = 1
+    if str(update.message.chat_id) in userLedger.keys():
+        ledger = userLedger[str(update.message.chat_id)]
+        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
+        statement = userStatement[str(update.message.chat_id)]
+        checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
@@ -167,11 +166,10 @@ def input(bot, update, args):
 def latest(bot, update):
     statement = []
     checkUser = 0
-    for ownId in userLedger.keys():
-        if str(update.message.chat_id) == ownId:
-            if not userStatement[ownId]: userStatement[ownId] = []
-            statement = userStatement[ownId]
-            checkUser = 1
+    if str(update.message.chat_id) in userLedger.keys():
+        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
+        statement = userStatement[str(update.message.chat_id)]
+        checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
@@ -185,10 +183,9 @@ def latest(bot, update):
 def view(bot, update):
     ledger = {}
     checkUser = 0
-    for ownId in userLedger.keys():
-        if str(update.message.chat_id) == ownId:
-            ledger = userLedger[ownId]
-            checkUser = 1
+    if str(update.message.chat_id) in userLedger.keys():
+        ledger = userLedger[str(update.message.chat_id)]
+        checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
@@ -210,12 +207,11 @@ def returnP(bot, update, args):
     ledger = {}
     statement = []
     checkUser = 0
-    for ownId in userLedger.keys():
-        if str(update.message.chat_id) == ownId:
-            ledger = userLedger[ownId]
-            if not userStatement[ownId]: userStatement[ownId] = []
-            statement = userStatement[ownId]
-            checkUser = 1
+    if str(update.message.chat_id) in userLedger.keys():
+        ledger = userLedger[str(update.message.chat_id)]
+        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
+        statement = userStatement[str(update.message.chat_id)]
+        checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
@@ -250,12 +246,11 @@ def remove(bot, update, args):
     ledger = {}
     statement = []
     checkUser = 0
-    for ownId in userLedger.keys():
-        if str(update.message.chat_id) == ownId:
-            ledger = userLedger[ownId]
-            if not userStatement[ownId]: userStatement[ownId] = []
-            statement = userStatement[ownId]
-            checkUser = 1
+    if str(update.message.chat_id) in userLedger.keys():
+        ledger = userLedger[str(update.message.chat_id)]
+        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
+        statement = userStatement[str(update.message.chat_id)]
+        checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
@@ -294,12 +289,11 @@ def reset(bot, update):
     ledger = {}
     statement = []
     checkUser = 0
-    for ownId in userLedger.keys():
-        if str(update.message.chat_id) == ownId:
-            ledger = userLedger[ownId]
-            if not userStatement[ownId]: userStatement[ownId] = []
-            statement = userStatement[ownId]
-            checkUser = 1
+    if str(update.message.chat_id) in userLedger.keys():
+        ledger = userLedger[str(update.message.chat_id)]
+        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
+        statement = userStatement[str(update.message.chat_id)]
+        checkUser = 1
     if checkUser == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
