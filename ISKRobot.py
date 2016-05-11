@@ -118,28 +118,25 @@ def help(bot, update):
 
 # It will be performed when you type, /추가 사람이름 금액
 def input(bot, update, args):
-    if len(args) % 2 == 1: return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') # Checking args number
+#    if len(args) % 2 == 1: return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') # Checking args number
     try: # For Catching it's number or not
-        for i in range(0,(len(args) - 2) // 2): int(args[(i*2)+1])
-        if (str(args[len(args) - 2]) != "-t"): int(args[len(args) - 1])
+        for i in range(0,(len(args) // 2)): int(args[(i*2)+1])
+        if len(args) % 2 != 0 and str(args[len(args) - 1])[0:1] != "&": return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') #
     except: return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
 
     # Check this chat room is registered, if not, just return
     ledger = {}
     statement = []
-    checkUser = 0
     if str(update.message.chat_id) in userLedger.keys():
         ledger = userLedger[str(update.message.chat_id)]
-        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
         statement = userStatement[str(update.message.chat_id)]
-        checkUser = 1
-    if checkUser == 0:
+    else:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
     # Check she or he is room leader,
     if userLedger[str(update.message.chat_id)].get('ADMINID', 0) != update.message.from_user.id: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
 
     length = len(args)
-    if str(args[len(args) - 2]) == "-t": length = len(args) - 2
+    if len(args) % 2 != 0 and str(args[:-1])[0:1]: length = len(args) - 1
     for i in range(0,length // 2):
         count = 0
         for person in ledger.keys():
@@ -150,7 +147,7 @@ def input(bot, update, args):
             ledger[str(args[i*2])] = int(args[(i*2)+1])
 
     state = " " + exec[0][0] + " : "
-    if str(args[len(args) - 2]) == "-t": state = state + "(" + str(args[len(args) - 1]) + ") "
+    if len(args) % 2 != 0 and str(args[:-1])[0:1]: state = state + "(" + str(args[len(args) - 1]) + ") "
     for i in range(0,length):
         state += args[i] + " "
     state += "\n"
@@ -165,33 +162,13 @@ def input(bot, update, args):
     memoryNow(str(update.message.chat_id))
     bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
 
-# It will be performed when you type, /명세, it shows your states.
-def latest(bot, update):
-    # Check this chat room is registered, if not, just return
-    statement = []
-    checkUser = 0
-    if str(update.message.chat_id) in userLedger.keys():
-        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
-        statement = userStatement[str(update.message.chat_id)]
-        checkUser = 1
-    if checkUser == 0:
-        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
-
-    result = "\n\n" + ("#" * 19) + "\n"
-    for state in statement:
-        result += state
-    result += "#" * 19
-    bot.sendMessage(update.message.chat_id, text='최근 명세서입니다. (' + userLedger[str(update.message.chat_id)]['recent'] + ' 기준)' + result)
-
 # It will be performed when you type, /조회
 def view(bot, update):
     # Check this chat room is registered, if not, just return
     ledger = {}
-    checkUser = 0
     if str(update.message.chat_id) in userLedger.keys():
         ledger = userLedger[str(update.message.chat_id)]
-        checkUser = 1
-    if checkUser == 0:
+    else:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
     result = "\n\n" + ("*" * 19) + "\n"
@@ -201,6 +178,21 @@ def view(bot, update):
     if ledger.get('ACCOUNT', '0') != '0': result = result + "\n" + ledger['ACCOUNT'] + "\n"
     result += "*" * 19
     bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. (' + ledger['recent'] + ' 기준)' + result)
+
+# It will be performed when you type, /명세, it shows your states.
+def latest(bot, update):
+    # Check this chat room is registered, if not, just return
+    statement = []
+    if str(update.message.chat_id) in userStatement.keys():
+        statement = userStatement[str(update.message.chat_id)]
+    else:
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+
+    result = "\n\n" + ("#" * 19) + "\n"
+    for state in statement:
+        result += state
+    result += "#" * 19
+    bot.sendMessage(update.message.chat_id, text='최근 명세서입니다. (' + userLedger[str(update.message.chat_id)]['recent'] + ' 기준)' + result)
 
 # It will be performed when you type, /부분 사람이름 금액
 def returnP(bot, update, args):
@@ -212,13 +204,10 @@ def returnP(bot, update, args):
     # Check this chat room is registered, if not, just return
     ledger = {}
     statement = []
-    checkUser = 0
     if str(update.message.chat_id) in userLedger.keys():
         ledger = userLedger[str(update.message.chat_id)]
-        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
         statement = userStatement[str(update.message.chat_id)]
-        checkUser = 1
-    if checkUser == 0:
+    else:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
     # Check she or he is room leader,
     if userLedger[str(update.message.chat_id)].get('ADMINID', 0) != update.message.from_user.id: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
@@ -252,13 +241,10 @@ def remove(bot, update, args):
     # Check this chat room is registered, if not, just return
     ledger = {}
     statement = []
-    checkUser = 0
     if str(update.message.chat_id) in userLedger.keys():
         ledger = userLedger[str(update.message.chat_id)]
-        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
         statement = userStatement[str(update.message.chat_id)]
-        checkUser = 1
-    if checkUser == 0:
+    else:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
     # Check she or he is room leader,
     if userLedger[str(update.message.chat_id)].get('ADMINID', 0) != update.message.from_user.id: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
@@ -296,18 +282,16 @@ def reset(bot, update):
     # Check this chat room is registered, if not, just return
     ledger = {}
     statement = []
-    checkUser = 0
     if str(update.message.chat_id) in userLedger.keys():
         ledger = userLedger[str(update.message.chat_id)]
-        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
         statement = userStatement[str(update.message.chat_id)]
-        checkUser = 1
-    if checkUser == 0:
+    else:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
     # Check she or he is room leader,
     if userLedger[str(update.message.chat_id)].get('ADMINID', 0) != update.message.from_user.id: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
 
     ledger.clear()
+    ledger['ADMINID'] = update.message.from_user.id
 
     state = "  ** " + exec[5][0] + "가 수행됨. ** \n"
     if len(statement) < 10:
@@ -324,12 +308,9 @@ def reset(bot, update):
 def account(bot, update, args):
     # Check this chat room is registered, if not, just return
     ledger = {}
-    checkUser = 0
     if str(update.message.chat_id) in userLedger.keys():
         ledger = userLedger[str(update.message.chat_id)]
-        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
-        checkUser = 1
-    if checkUser == 0:
+    else:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
     # Check she or he is room leader,
     if userLedger[str(update.message.chat_id)].get('ADMINID', 0) != update.message.from_user.id: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
@@ -344,11 +325,7 @@ def account(bot, update, args):
 
 def stop(bot, update):
     # Check this chat room is registered, if not, just return
-    checkUser = 0
-    if str(update.message.chat_id) in userLedger.keys():
-        if not str(update.message.chat_id) in userStatement.keys(): userStatement[str(update.message.chat_id)] = []
-        checkUser = 1
-    if checkUser == 0:
+    if not str(update.message.chat_id) in userLedger.keys():
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
     # Check she or he is room leader,
     if userLedger[str(update.message.chat_id)].get('ADMINID', 0) != update.message.from_user.id: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
