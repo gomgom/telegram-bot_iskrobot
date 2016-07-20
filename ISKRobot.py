@@ -2,8 +2,8 @@
  ISKRobot(Il-Su-KKun Robot) (일수꾼봇)
 
  Created by Gomgom (https://gom2.net)
- Final released: 2016-05-12
- Version: v1.3.0
+ Final released: 2016-07-20
+ Version: v1.4.0
 """
 
 #
@@ -13,6 +13,10 @@ import sys, time, pickle, os
 import logging
 from telegram.ext import Updater, CommandHandler
 from telegram import Emoji, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardHide
+
+# Import SQLite3
+import sqlite3
+
 
 #
 # DEFINE PARTS
@@ -30,13 +34,25 @@ userLedger = { }
 userStatement = { }
 TOKEN = ''
 
+if os.path.isfile('./debt.db'):
+    os.remove('./debt.db')
+con = sqlite3.connect("debt.db")
+cur = con.cursor()
+cur.execute("CREATE TABLE IF NOT EXISTS t_room (room_id text, owner text, account text)")
+cur.execute("CREATE TABLE IF NOT EXISTS t_ledger (room_id text, name text, money int)")
+con.commit()
+con.close()
+
 # Checking parameters is or not, if there is, it's put in TOKEN(It's token of this bot))
 # Sample exec: python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11
+
+'''
 if len(sys.argv) != 2:
     print("토큰이 입력되지 않았습니다. 매개변수에 TOKEN을 입력해 주세요.")
     sys.exit()
 TOKEN = str(sys.argv[1])
 print("토큰 초기화가 완료되었습니다. 봇을 시작합니다.")
+
 
 # Check there is save or not
 if os.path.exists("./debt.dat"):
@@ -49,6 +65,12 @@ if os.path.exists("./state.dat"):
         stateFromFile = pickle.load(f)
         if userStatement != stateFromFile:
             userStatement = stateFromFile
+'''
+
+TOKEN = '232778291:AAFiGkG1eTsgexNoM-PK5-vmdRx8P1nCvms'
+print("토큰 초기화가 완료되었습니다. 봇을 시작합니다.")
+
+
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -90,23 +112,23 @@ def makeNumToMoney(money):
 #
 # It will show /start
 def start(bot, update):
+    con = sqlite3.connect("debt.db")
+    cur = con.cursor()
+
     startMes = '안녕하세요. 저는 일수꾼봇입니다. ' + Emoji.CAT_FACE_WITH_WRY_SMILE + '\n'
     startMes += '여러분들이 빌린 빚을 갚게 하려고 늘 노력하고 있답니다. :)\n'
     startMes += '도움말이 필요하시면 /help를 입력해 주세요. ^^'
 
-    if not str(update.message.chat_id) in userLedger.keys():
-        userLedger[str(update.message.chat_id)] = {}
-        userStatement[str(update.message.chat_id)] = []
-        userLedger[str(update.message.chat_id)]['ADMINID'] = update.message.from_user.id
-        memoryNow(str(update.message.chat_id))
+#    startMes += '\n\n사용을 원하시는 방에서 #일수꾼을 입력해 주세요.'
+    cur.execute('INSERT INTO t_room VALUES("' + str(update.message.chat_id) + '", "' + str(update.message.from_user.id) + '", "' + '")')
+    con.commit()
+    con.close()
+    return bot.sendMessage(update.message.chat_id, text=startMes)
+#    else:
+#        return bot.sendMessage(update.message.chat_id, text=startMes + '\n\n이미 이 채팅에는 관리자가 존재합니다.')
 
-        startMes += '\n\n/start 명령을 실행하신 분이 관리자가 되셨습니다.\n'
-        startMes += '추가, 상환 등은 관리자만 이용 가능합니다.\n'
-        startMes += '/stop 명령으로 데이터베이스 삭제가 가능합니다.'
+#def callisk(bot, update):
 
-        return bot.sendMessage(update.message.chat_id, text=startMes)
-    else:
-        return bot.sendMessage(update.message.chat_id, text=startMes + '\n\n이미 이 채팅에는 관리자가 존재합니다.')
 
 # It will show /help
 def help(bot, update):
@@ -114,10 +136,21 @@ def help(bot, update):
     for execi in exec:
         helpMes = helpMes + ' - /' + execi[0] + ' ' + execi[1] + '\n'
     helpMes = helpMes + '\n' + ('*' * 19)
+
     bot.sendMessage(update.message.chat_id, text=helpMes)
 
 # It will be performed when you type, /추가 사람이름 금액
 def input(bot, update, args):
+    con = sqlite3.connect("debt.db")
+    cur = con.cursor()
+
+    cur.execute('INSERT INTO t_ledger VALUES("' + str(update.message.chat_id) + '", "' + str(args[0]) + '", "' + str(args[1]) + '")')
+    con.commit()
+    con.close()
+
+    bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
+
+'''
 #    if len(args) % 2 == 1: return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') # Checking args number
     try: # For Catching it's number or not
         for i in range(0,(len(args) // 2)): int(args[(i*2)+1])
@@ -161,9 +194,22 @@ def input(bot, update, args):
     userStatement[str(update.message.chat_id)] = statement
     memoryNow(str(update.message.chat_id))
     bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
+'''
+
 
 # It will be performed when you type, /조회
 def view(bot, update):
+    con = sqlite3.connect("debt.db")
+    cur = con.cursor()
+    cur.execute('SELECT * FROM t_ledger')
+    viewMes = str(cur.fetchone())
+
+    bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. \n' + )
+    con.close()
+
+
+
+'''
     # Check this chat room is registered, if not, just return
     ledger = {}
     if str(update.message.chat_id) in userLedger.keys():
@@ -178,6 +224,7 @@ def view(bot, update):
     if ledger.get('ACCOUNT', '0') != '0': result = result + "\n" + ledger['ACCOUNT'] + "\n"
     result += "*" * 19
     bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. (' + ledger['recent'] + ' 기준)' + result)
+'''
 
 # It will be performed when you type, /명세, it shows your states.
 def latest(bot, update):
@@ -384,6 +431,7 @@ def main():
     dp.addHandler(CommandHandler("stop", stop))
     dp.addHandler(CommandHandler("confirm", confirm))
     dp.addHandler(CommandHandler("cancel", cancel))
+#    dp.addHandler(CommandHandler("#일수꾼", callisk))
     dp.addErrorHandler(error)
 
     updater.start_polling()
