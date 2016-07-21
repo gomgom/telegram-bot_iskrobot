@@ -3,7 +3,7 @@
 
  Created by Gomgom (https://gom2.net)
  Final released: 2016-07-21
- Version: v1.4.0
+ Version: v1.4.2
 """
 
 #
@@ -160,7 +160,7 @@ def view(bot, update):
     if int(cur.fetchone()[0]) == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
 
-    cur.execute('SELECT * FROM t_ledger WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY name desc')
+    cur.execute('SELECT * FROM t_ledger WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY money desc')
     fetchlist = cur.fetchall()
 
     result = "\n\n" + ("*" * 19) + "\n"
