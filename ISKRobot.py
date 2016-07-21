@@ -34,9 +34,10 @@ userLedger = { }
 userStatement = { }
 TOKEN = ''
 
-if os.path.isfile('./debt.db'):
-    os.remove('./debt.db')
-con = sqlite3.connect("debt.db")
+debtLocation = os.path.dirname(__file__) + '/debt.db'
+if os.path.isfile(debtLocation):
+    os.remove(debtLocation)
+con = sqlite3.connect(debtLocation)
 cur = con.cursor()
 cur.execute("CREATE TABLE IF NOT EXISTS t_room (room_id text, owner text, account text)")
 cur.execute("CREATE TABLE IF NOT EXISTS t_ledger (room_id text, name text, money int)")
@@ -112,7 +113,7 @@ def makeNumToMoney(money):
 #
 # It will show /start
 def start(bot, update):
-    con = sqlite3.connect("debt.db")
+    con = sqlite3.connect(debtLocation)
     cur = con.cursor()
 
     startMes = '안녕하세요. 저는 일수꾼봇입니다. ' + Emoji.CAT_FACE_WITH_WRY_SMILE + '\n'
@@ -141,43 +142,39 @@ def help(bot, update):
 
 # It will be performed when you type, /추가 사람이름 금액
 def input(bot, update, args):
-    con = sqlite3.connect("debt.db")
+    con = sqlite3.connect(debtLocation)
     cur = con.cursor()
 
-    cur.execute('INSERT INTO t_ledger VALUES("' + str(update.message.chat_id) + '", "' + str(args[0]) + '", "' + str(args[1]) + '")')
-    con.commit()
-    con.close()
-
-    bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
-
-'''
-#    if len(args) % 2 == 1: return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') # Checking args number
+    if len(args) % 2 == 1: return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') # Checking args number
     try: # For Catching it's number or not
         for i in range(0,(len(args) // 2)): int(args[(i*2)+1])
         if len(args) % 2 != 0 and str(args[len(args) - 1])[0:1] != "&": return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.') #
     except: return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
 
     # Check this chat room is registered, if not, just return
-    ledger = {}
-    statement = []
-    if str(update.message.chat_id) in userLedger.keys():
-        ledger = userLedger[str(update.message.chat_id)]
-        statement = userStatement[str(update.message.chat_id)]
-    else:
+    cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
+    if int(cur.fetchone()[0]) == 0:
         return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
-    # Check she or he is room leader,
-    if userLedger[str(update.message.chat_id)].get('ADMINID', 0) != update.message.from_user.id: return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
+    cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
+    if str(cur.fetchone()[0]) != str(update.message.from_user.id):
+        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
 
     length = len(args)
-    if len(args) % 2 != 0 and str(args[:-1])[0:1]: length = len(args) - 1
-    for i in range(0,length // 2):
-        count = 0
-        for person in ledger.keys():
-            if person == str(args[i*2]):
-                ledger[person] += int(args[(i*2)+1])
-                count = 1
-        if count == 0:
-            ledger[str(args[i*2])] = int(args[(i*2)+1])
+    if len(args) % 2 != 0 and str(args[:-1])[0:1] == '&':
+        length = len(args) - 1
+        state = " " + exec[0][0] + " : "
+
+
+    for i in range(0, length // 2):
+        cur.execute('SELECT COUNT(*) FROM t_ledger WHERE room_id="' + str(update.message.chat_id) + '" AND name="' + str(args[i*2]) + '"')
+        if int(cur.fetchone()[0]) != 0:
+            cur.execute('SELECT money FROM t_ledger WHERE room_id="' + str(update.message.chat_id) + '" AND name="' + str(args[i*2]) + '"')
+            curmoney = int(cur.fetchone()[0])
+            cur.execute('UPDATE t_ledger SET money=' + str(curmoney + int(args[(i*2)+1])) + ' WHERE room_id="' + str(update.message.chat_id) + '" AND name="' + str(args[i*2]) + '"')
+        else:
+            cur.execute('INSERT INTO t_ledger VALUES("' + str(update.message.chat_id) + '", "' + str(args[i*2]) + '", "' + str(int(args[(i*2)+1])) + '")')
+
+    
 
     state = " " + exec[0][0] + " : "
     if len(args) % 2 != 0 and str(args[:-1])[0:1]: state = state + "(" + str(args[len(args) - 1]) + ") "
@@ -190,26 +187,25 @@ def input(bot, update, args):
         del statement[0]
         statement.append(state)
 
-    userLedger[str(update.message.chat_id)] = ledger
-    userStatement[str(update.message.chat_id)] = statement
-    memoryNow(str(update.message.chat_id))
+    con.commit()
+    con.close()
+
     bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
-'''
 
 
 # It will be performed when you type, /조회
 def view(bot, update):
-    con = sqlite3.connect("debt.db")
+    con = sqlite3.connect(debtLocation)
     cur = con.cursor()
     cur.execute('SELECT * FROM t_ledger')
-    viewMes = str(cur.fetchone())
+    viewMes = str(cur.fetchall())
 
-    bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. \n' + )
+    bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. \n' + viewMes)
     con.close()
 
 
 
-'''
+    '''
     # Check this chat room is registered, if not, just return
     ledger = {}
     if str(update.message.chat_id) in userLedger.keys():
@@ -224,7 +220,7 @@ def view(bot, update):
     if ledger.get('ACCOUNT', '0') != '0': result = result + "\n" + ledger['ACCOUNT'] + "\n"
     result += "*" * 19
     bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. (' + ledger['recent'] + ' 기준)' + result)
-'''
+    '''
 
 # It will be performed when you type, /명세, it shows your states.
 def latest(bot, update):
