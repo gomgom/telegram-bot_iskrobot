@@ -3,7 +3,7 @@
 
  Created by Gomgom (https://gom2.net)
  Final released: 2016-07-21
- Version: v1.4.2
+ Version: v1.4.3
 """
 
 #
@@ -91,7 +91,7 @@ def start(bot, update):
         return bot.sendMessage(update.message.chat_id, text=startMes + '\n\n이 방에서 사용이 처음이시네요. 초기화 처리가 완료되었습니다.')
     else:
         con.close()
-        return bot.sendMessage(update.message.chat_id, text=startMes + '\n\n이미 이 채팅에는 관리자가 존재합니다.')
+        return bot.sendMessage(update.message.chat_id, text=startMes + '\n\n이미 이 채팅에는 관리자가 존재합니다.', disable_notification=True)
 
 
 # It will show /help
@@ -113,11 +113,11 @@ def input(bot, update, args):
     # Check this chat room is registered, if not, just return
     cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if int(cur.fetchone()[0]) == 0:
-        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *', disable_notification=True)
     # Check you're admin or not of this room
     cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if str(cur.fetchone()[0]) != str(update.message.from_user.id):
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
+        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+', disable_notification=True)
 
     try:  # For Catching it's number or not
         for i in range(0, (len(args) // 2)):
@@ -158,7 +158,7 @@ def view(bot, update):
     # Check this chat room is registered, if not, just return
     cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if int(cur.fetchone()[0]) == 0:
-        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *', disable_notification=True)
 
     cur.execute('SELECT * FROM t_ledger WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY money desc')
     fetchlist = cur.fetchall()
@@ -172,7 +172,7 @@ def view(bot, update):
     result += "\n[" + str(cur.fetchone()[0]) + "]"
 
     cur.execute('SELECT * FROM t_state WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY date desc limit 1')
-    bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. (' + str(cur.fetchone()[3])[5:] + ' 기준)' + result)
+    bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. (' + str(cur.fetchone()[3])[5:] + ' 기준)' + result, disable_notification=True)
     con.close()
 
 
@@ -185,7 +185,7 @@ def latest(bot, update):
     # Check this chat room is registered, if not, just return
     cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if int(cur.fetchone()[0]) == 0:
-        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *', disable_notification=True)
 
     # Get latest list of your statements (limit 10)
     cur.execute('SELECT * FROM t_state WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY date desc limit 10')
@@ -203,7 +203,7 @@ def latest(bot, update):
     result += "#" * 19
 
     cur.execute('SELECT * FROM t_state WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY date desc limit 1')
-    bot.sendMessage(update.message.chat_id, text='최근 명세서입니다. (' + str(cur.fetchone()[3])[5:] + ' 기준)' + result)
+    bot.sendMessage(update.message.chat_id, text='최근 명세서입니다. (' + str(cur.fetchone()[3])[5:] + ' 기준)' + result, disable_notification=True)
     con.close()
 
 
@@ -216,11 +216,11 @@ def remove(bot, update, args):
     # Check this chat room is registered, if not, just return
     cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if int(cur.fetchone()[0]) == 0:
-        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *', disable_notification=True)
     # Check you're admin or not of this room
     cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if str(cur.fetchone()[0]) != str(update.message.from_user.id):
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
+        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+', disable_notification=True)
 
     cur.execute('SELECT name FROM t_ledger WHERE room_id="' + str(update.message.chat_id) + '"')
     fetchlist = cur.fetchall()
@@ -252,11 +252,11 @@ def reset(bot, update):
     # Check this chat room is registered, if not, just return
     cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if int(cur.fetchone()[0]) == 0:
-        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *', disable_notification=True)
     # Check you're admin or not of this room
     cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if str(cur.fetchone()[0]) != str(update.message.from_user.id):
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
+        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+', disable_notification=True)
 
     cur.execute('DELETE FROM t_ledger WHERE room_id="' + str(update.message.chat_id) + '"')
 
@@ -277,11 +277,11 @@ def account(bot, update, args):
     # Check this chat room is registered, if not, just return
     cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if int(cur.fetchone()[0]) == 0:
-        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *', disable_notification=True)
     # Check you're admin or not of this room
     cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if str(cur.fetchone()[0]) != str(update.message.from_user.id):
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
+        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+', disable_notification=True)
 
     accountdata = ''
     for i in range(0,len(args)):
@@ -289,7 +289,7 @@ def account(bot, update, args):
     accountdata = accountdata[:-1]
 
     cur.execute('UPDATE t_room SET account="' + accountdata + '" WHERE room_id="' + str(update.message.chat_id) + '"')
-    bot.sendMessage(update.message.chat_id, text='계좌가 기록되었습니다.')
+    bot.sendMessage(update.message.chat_id, text='계좌가 기록되었습니다.', disable_notification=True)
 
     con.commit()
     con.close()
@@ -303,11 +303,11 @@ def stop(bot, update):
     # Check this chat room is registered, if not, just return
     cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if int(cur.fetchone()[0]) == 0:
-        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *')
+        return bot.sendMessage(update.message.chat_id, text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *', disable_notification=True)
     # Check you're admin or not of this room
     cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     if str(cur.fetchone()[0]) != str(update.message.from_user.id):
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+')
+        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+', disable_notification=True)
 
     cur.execute('SELECT stopchecker FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
 
@@ -352,7 +352,7 @@ def cancel(bot, update):
         con.commit()
         con.close()
         reply_markup = ReplyKeyboardHide()
-        return bot.sendMessage(chat_id=update.message.chat_id, text='취소되었습니다.', reply_markup=reply_markup)
+        return bot.sendMessage(chat_id=update.message.chat_id, text='취소되었습니다.', reply_markup=reply_markup, disable_notification=True)
 
 
 def error(bot, update, error):
