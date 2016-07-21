@@ -2,7 +2,6 @@
 /.idea/workspace.xml
 /.idea/tasks.xml
 # It works even if you don't have this saved file
-/debt.dat
-/state.dat
+/debt.db
 # For run docker
 run_docker.sh

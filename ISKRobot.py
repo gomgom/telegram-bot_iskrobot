@@ -165,7 +165,7 @@ def view(bot, update):
 
     result = "\n\n" + ("*" * 19) + "\n"
     for i in range(len(fetchlist)):
-        result += str(fetchlist[i][1]) + " " + makeNumToMoney((fetchlist[i][2])) + "\n"
+        result += str(fetchlist[i][1]) + " " + makeNumToMoney((fetchlist[i][2])) + "원\n"
     result += "*" * 19
 
     cur.execute('SELECT account FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
@@ -286,6 +286,7 @@ def account(bot, update, args):
     accountdata = ''
     for i in range(0,len(args)):
         accountdata += str(args[i]) + ' '
+    accountdata = accountdata[:-1]
 
     cur.execute('UPDATE t_room SET account="' + accountdata + '" WHERE room_id="' + str(update.message.chat_id) + '"')
     bot.sendMessage(update.message.chat_id, text='계좌가 기록되었습니다.')
