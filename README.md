@@ -8,6 +8,11 @@
 
 
 ## 최근 변경사항
+version 1.5.1 :
+ - [더치] 기능을 추가하였습니다. (테스트 기능이라 잘 구현되지 않을 수 있습니다.)
+ - (1.5.0에서) 초기화 기능 Inline 구현부를 개발 중입니다. (적용되진 않음)
+ - README, Dockerfile 파일 등을 다듬었습니다.
+
 version 1.4.3 :
  - 몇몇 경우에 한해서, 알림소리가 켜지지 않도록 설정하였습니다.
 
@@ -103,9 +108,9 @@ Docker가 설치되어 있는 리눅스 콘솔에서 본 Git 저장소를 다운
 
     sudo docker run --name <프로세스 이름> -d -e TOKENKEY='<토큰값>' -v /etc/localtime:/etc/localtime <이미지 태그>
 
-      예) sudo docker build --tag iskrobot:1.4 .
+      예) sudo docker build --tag iskrobot:1.5.1 .
 
-          sudo docker run --name iskrobot-1-4 -d -e TOKENKEY='12345678:A1B2C3D4E5F6G7H8i9_j10k11' -v /etc/localtime:/etc/localtime iskrobot:1.4
+          sudo docker run --name iskrobot-1-5-1 -d -e TOKENKEY='12345678:A1B2C3D4E5F6G7H8i9_j10k11' -v /etc/localtime:/etc/localtime iskrobot:1.5.1
 
     (* 우분투 배포판 기준. 이미지 태그, 프로세스 이름, 토큰값, 아이디 등은 샘플입니다. ADMINID='(아이디)' 부분은 필요시 생략 가능합니다.)
 

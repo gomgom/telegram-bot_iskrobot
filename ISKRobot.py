@@ -2,8 +2,8 @@
  ISKRobot(Il-Su-KKun Robot) (일수꾼봇)
 
  Created by Gomgom (https://gom2.net)
- Final released: 2016-07-21
- Version: v1.4.3
+ Final released: 2016-07-23
+ Version: v1.5.1
 """
 
 #
@@ -12,9 +12,13 @@
 import sys
 import os
 import sqlite3
+import random
 import logging
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 from telegram import Emoji, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardHide
+'''
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+'''
 
 #
 # DEFINE PARTS
@@ -23,6 +27,7 @@ from telegram import Emoji, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardHi
 # exec has some information of commands and instructions
 EXEC_LIST = (("일수", "[이름 금액 ... #내용]\n\t\t\t빚을 추가/삭제합니다.\n\t\t\t마지막에 '#내용' 추가 가능.\n\
                 \t\t\t단, 태그는 띄어쓰기 불가."),
+             ("더치", "[이름... 금액]\n\t\t\t비용을 1/n으로 나눠 추가합니다."),
              ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."),
              ("명세", "[ ]\n\t\t\t최근 기록 내역을 조회합니다."),
              ("상환", "[이름 ...]\n\t\t\t목록을 삭제합니다."),
@@ -103,7 +108,8 @@ def start(bot, update):
                                '\n\n이 방에서 사용이 처음이시네요. 초기화 처리가 완료되었습니다.')
     else:
         con.close()
-        return bot.sendMessage(update.message.chat_id, text=start_message + '\n\n이미 이 채팅에는 관리자가 존재합니다.',
+        return bot.sendMessage(update.message.chat_id,
+                               text=start_message + '\n\n이미 이 채팅에는 관리자가 존재합니다.',
                                disable_notification=True)
 
 
@@ -162,10 +168,91 @@ def input(bot, update, args):
     cur.execute('INSERT INTO t_state VALUES("' + str(update.message.chat_id) + '", "일수", "' +
                 str(args[0:]) + '", date("now","localtime"))')
 
-    bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.')
+    reply_markup = ReplyKeyboardHide()
+
+    bot.sendMessage(update.message.chat_id, text='추가가 완료되었습니다.', reply_markup=reply_markup)
 
     con.commit()
     con.close()
+
+
+# It will divide big money per persons, to use /더치 [사람 목록] [비용]
+def dutch(bot, update, args):
+    # Connect to DB file
+    con = sqlite3.connect(FILE_LOCATION)
+    cur = con.cursor()
+
+    # Check this chat room is registered, if not, just return
+    cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
+    if int(cur.fetchone()[0]) == 0:
+        return bot.sendMessage(update.message.chat_id,
+                               text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *',
+                               disable_notification=True)
+    # Check you're admin or not of this room
+    cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
+    if str(cur.fetchone()[0]) != str(update.message.from_user.id):
+        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+', disable_notification=True)
+
+    try:
+        target_money = int(args[len(args) - 1])  # Change String(target money) to Number for checking
+    except:
+        return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
+
+    persons = args[0:len(args) - 1]
+    person_number = len(persons)
+    person_list = ''
+
+    if target_money % person_number == 0:  # If I can divide my money exactly,
+        for i in range(0, person_number):
+            person_list += str(persons[i]) + ' ' + str(int(target_money / person_number)) + ' '  # Just Input money
+        custom_keyboard = [[KeyboardButton("/일수 " + person_list), KeyboardButton('/cancel')]]
+        reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard='True')
+        return bot.sendMessage(update.message.chat_id, text='다음과 같이 입력하시겠습니까?', reply_markup=reply_markup)
+    else:  # If I can't,
+        temp_money = round(target_money / person_number, -2)
+        if (target_money - temp_money) % (person_number - 1) == 0:
+            specialist = str(persons[random.randint(0, person_number - 1)])  # Pick one for taking little profit
+            person_list += specialist + ' ' + str(int(temp_money)) + ' '  # And Input profit person,
+            persons.remove(specialist)
+            for i in range(0, (person_number - 1)):  # add other persons,
+                person_list += str(persons[i]) + ' ' + str(int((target_money - temp_money) / (person_number - 1))) + ' '
+            custom_keyboard = [[KeyboardButton("/일수 " + person_list), KeyboardButton('/cancel')]]
+            reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard='True')
+            return bot.sendMessage(update.message.chat_id, text='다음과 같이 입력하시겠습니까?',
+                                   reply_markup=reply_markup)
+
+
+def button(bot, update):
+    query = update.callback_query
+
+    input()
+
+    bot.editMessageText(text="Selected option: %s" % query.data,
+                        chat_id=query.message.chat_id,
+                        message_id=query.message.message_id)
+
+    '''
+    # Connect to DB file
+    con = sqlite3.connect(FILE_LOCATION)
+    cur = con.cursor()
+
+    # Check this chat room is registered, if not, just return
+    cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
+    if int(cur.fetchone()[0]) == 0:
+        return bot.sendMessage(update.message.chat_id,
+                               text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *',
+                               disable_notification=True)
+    # Check you're admin or not of this room
+    cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
+    if str(cur.fetchone()[0]) != str(update.message.from_user.id):
+        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+', disable_notification=True)
+
+    try:
+        int(args[-1])  # Change String to Number for checking
+    except:
+        return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
+    '''
+
 
 
 # It will be performed when you type, /조회
@@ -348,6 +435,7 @@ def stop(bot, update):
     if int(cur.fetchone()[0]) == 0:
         cur.execute('UPDATE t_room SET stopchecker=1 WHERE room_id="' + str(update.message.chat_id) + '"')
         con.commit()
+
         custom_keyboard = [[KeyboardButton("/confirm"), KeyboardButton("/cancel")]]
         reply_markup = ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard='True')
         bot.sendMessage(update.message.chat_id, text='정말로 사용을 정지하시겠습니까?', reply_markup=reply_markup)
@@ -355,10 +443,48 @@ def stop(bot, update):
     con.close()
 
 
+''' (for Inline Keyboard, doesn't need now)
+def stop_confirm(bot, update):
+    query = update.callback_query
+
+    # Connect to DB file
+    con = sqlite3.connect(FILE_LOCATION)
+    cur = con.cursor()
+
+    cur.execute('SELECT stopchecker, owner FROM t_room WHERE room_id="' + str(query.message.chat_id) + '"')
+    fetched_list = cur.fetchone()
+
+    if query.data == 'confirm':
+        cur.execute('DELETE FROM t_ledger WHERE room_id="' + str(query.message.chat_id) + '"')
+        cur.execute('DELETE FROM t_room WHERE room_id="' + str(query.message.chat_id) + '"')
+        con.commit()
+        con.close()
+        #reply_markup = ReplyKeyboardHide()
+        return bot.sendMessage(chat_id=query.message.chat_id,
+                               text='이용을 중지합니다. 감사합니다.\n재이용은 다시 /start를 입력해 주세요.')
+    if query.data == 'cancel':
+        cur.execute('UPDATE t_room SET stopchecker=0 WHERE room_id="' + str(query.message.chat_id) + '"')
+        con.commit()
+        con.close()
+        #reply_markup = ReplyKeyboardHide()
+        return bot.sendMessage(chat_id=query.message.chat_id, text='취소되었습니다.', disable_notification=True)
+
+
+#    bot.editMessageText(text="Selected option: %s" % query.data,
+#                        chat_id=query.message.chat_id,
+#                        message_id=query.message.message_id)
+'''
+
+
 def confirm(bot, update):
     # Connect to DB file
     con = sqlite3.connect(FILE_LOCATION)
     cur = con.cursor()
+
+    # Check you're admin or not of this room
+    cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
+    if str(cur.fetchone()[0]) != str(update.message.from_user.id):
+        return
 
     cur.execute('SELECT stopchecker, owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     fetched_list = cur.fetchone()
@@ -379,21 +505,24 @@ def cancel(bot, update):
     con = sqlite3.connect(FILE_LOCATION)
     cur = con.cursor()
 
+    # Check you're admin or not of this room
+    cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
+    if str(cur.fetchone()[0]) != str(update.message.from_user.id):
+        return
+
     cur.execute('SELECT stopchecker, owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
     fetched_list = cur.fetchone()
 
-    if int(fetched_list[0]) == 1 and str(fetched_list[1]) == str(update.message.from_user.id):
-        cur.execute('UPDATE t_room SET stopchecker=0 WHERE room_id="' + str(update.message.chat_id) + '"')
-        con.commit()
-        con.close()
-        reply_markup = ReplyKeyboardHide()
-        return bot.sendMessage(chat_id=update.message.chat_id, text='취소되었습니다.', reply_markup=reply_markup,
-                               disable_notification=True)
+    cur.execute('UPDATE t_room SET stopchecker=0 WHERE room_id="' + str(update.message.chat_id) + '"')
+    con.commit()
+    con.close()
+    reply_markup = ReplyKeyboardHide()
+    return bot.sendMessage(chat_id=update.message.chat_id, text='취소되었습니다.', reply_markup=reply_markup,
+                           disable_notification=True)
 
 
 def error(bot, update, error):
     logger.warn('Update "%s" caused error "%s"' % (update, error))
-
 
 #
 # MAIN PARTS
@@ -410,11 +539,12 @@ def main():
     dp.addHandler(CommandHandler("start", start))
     dp.addHandler(CommandHandler("help", help))
     dp.addHandler(CommandHandler(EXEC_LIST[0][0], input, pass_args=True))
-    dp.addHandler(CommandHandler(EXEC_LIST[1][0], view))
-    dp.addHandler(CommandHandler(EXEC_LIST[2][0], latest))
-    dp.addHandler(CommandHandler(EXEC_LIST[3][0], remove, pass_args=True))
-    dp.addHandler(CommandHandler(EXEC_LIST[4][0], account, pass_args=True))
-    dp.addHandler(CommandHandler(EXEC_LIST[5][0], reset))
+    dp.addHandler(CommandHandler(EXEC_LIST[1][0], dutch, pass_args=True))
+    dp.addHandler(CommandHandler(EXEC_LIST[2][0], view))
+    dp.addHandler(CommandHandler(EXEC_LIST[3][0], latest))
+    dp.addHandler(CommandHandler(EXEC_LIST[4][0], remove, pass_args=True))
+    dp.addHandler(CommandHandler(EXEC_LIST[5][0], account, pass_args=True))
+    dp.addHandler(CommandHandler(EXEC_LIST[6][0], reset))
     dp.addHandler(CommandHandler("stop", stop))
     dp.addHandler(CommandHandler("confirm", confirm))
     dp.addHandler(CommandHandler("cancel", cancel))
