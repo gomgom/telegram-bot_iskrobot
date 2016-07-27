@@ -5,5 +5,3 @@
 /.idea/*.iml
 # It works even if you don't have this saved file
 /debt.db
-# For run docker
-run_docker.sh

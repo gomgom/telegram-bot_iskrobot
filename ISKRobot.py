@@ -286,8 +286,11 @@ def view(bot, update):
     result += "\n[" + str(cur.fetchone()[0]) + "]"
 
     cur.execute('SELECT * FROM t_state WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY date desc limit 1')
-    bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. (' + str(cur.fetchone()[3])[5:] + ' 기준)' + result,
-                    disable_notification=True)
+    try:
+        bot.sendMessage(update.message.chat_id, text='잔금 조회입니다. (' + str(cur.fetchone()[3])[5:] + ' 기준)' +
+                        result, disable_notification=True)
+    except TypeError:
+        bot.sendMessage(update.message.chat_id, text='보여드릴 조회/내역이 없습니다.', disable_notification=True)
     con.close()
 
 
@@ -320,8 +323,11 @@ def latest(bot, update):
     result += "#" * 19
 
     cur.execute('SELECT * FROM t_state WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY date desc limit 1')
-    bot.sendMessage(update.message.chat_id, text='최근 명세서입니다. (' + str(cur.fetchone()[3])[5:] + ' 기준)' + result,
-                    disable_notification=True)
+    try:
+        bot.sendMessage(update.message.chat_id, text='최근 명세서입니다. (' + str(cur.fetchone()[3])[5:] + ' 기준)' +
+                        result, disable_notification=True)
+    except TypeError:
+        bot.sendMessage(update.message.chat_id, text='보여드릴 조회/내역이 없습니다.', disable_notification=True)
     con.close()
 
 
