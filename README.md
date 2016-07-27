@@ -8,6 +8,10 @@
 
 
 ## 최근 변경사항
+version 1.5.2 :
+ - [일수] 명령 시, 만약 합계가 0원이 된 경우에는 그 데이터베이스를 삭제합니다.
+ - 기타 소소한 소스의 수정이 있었습니다.
+
 version 1.5.1 :
  - [더치] 기능을 추가하였습니다. (테스트 기능이라 잘 구현되지 않을 수 있습니다.)
  - (1.5.0에서) 초기화 기능 Inline 구현부를 개발 중입니다. (적용되진 않음)
@@ -95,7 +99,7 @@ python-telegram-bot 모듈은 본 소스 코드에는 포함되어 있지 않으
 
 
 ## Docker를 이용한 봇 사용방법
-리눅스 배포판을 활용하는 경우, 본 봇은 Docker를 통해 이미지 관리가 가능합니다. 본 소스의 Dockerfile은 Docker Hub의 Python:3.5.1-slim을 활용하여 구축되어 있습니다.
+리눅스 배포판을 활용하는 경우, 본 봇은 Docker를 통해 이미지 관리가 가능합니다. 본 소스의 Dockerfile은 Docker Hub의 python:3.6-slim을 활용하여 구축되어 있습니다.
 
 핵심적인 ISKRobot.py와 debt.db를 빌드된 Docker 이미지에 저장해 자동으로 실행되도록 활용이 가능합니다.
 (단, 데이터 백업은 주석처리 되어 있으므로 필요한 경우에만 활용하기 바람.)
@@ -108,9 +112,9 @@ Docker가 설치되어 있는 리눅스 콘솔에서 본 Git 저장소를 다운
 
     sudo docker run --name <프로세스 이름> -d -e TOKENKEY='<토큰값>' -v /etc/localtime:/etc/localtime <이미지 태그>
 
-      예) sudo docker build --tag iskrobot:1.5.1 .
+      예) sudo docker build --tag iskrobot:1.5.2 .
 
-          sudo docker run --name iskrobot-1-5-1 -d -e TOKENKEY='12345678:A1B2C3D4E5F6G7H8i9_j10k11' -v /etc/localtime:/etc/localtime iskrobot:1.5.1
+          sudo docker run --name iskrobot-1-5-2 -d -e TOKENKEY='12345678:A1B2C3D4E5F6G7H8i9_j10k11' -v /etc/localtime:/etc/localtime iskrobot:1.5.2
 
     (* 우분투 배포판 기준. 이미지 태그, 프로세스 이름, 토큰값, 아이디 등은 샘플입니다. ADMINID='(아이디)' 부분은 필요시 생략 가능합니다.)
 

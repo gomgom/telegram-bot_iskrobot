@@ -3,7 +3,7 @@
 
  Created by Gomgom (https://gom2.net)
  Final released: 2016-07-23
- Version: v1.5.1
+ Version: v1.5.2
 """
 
 #
@@ -14,9 +14,10 @@ import os
 import sqlite3
 import random
 import logging
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler
 from telegram import Emoji, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardHide
 '''
+from telegram.ext import CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 '''
 
@@ -114,7 +115,7 @@ def start(bot, update):
 
 
 # It will show /help
-def help(bot, update):
+def support(bot, update):
     help_message = '*** 명령어 모음집 *** \n\n'
     for i in EXEC_LIST:
         help_message += ' - /' + i[0] + ' ' + i[1] + '\n'
@@ -124,7 +125,7 @@ def help(bot, update):
 
 
 # It will be performed when you type, /일수 사람이름 금액
-def input(bot, update, args):
+def add(bot, update, args):
     # Connect to DB file
     con = sqlite3.connect(FILE_LOCATION)
     cur = con.cursor()
@@ -143,7 +144,7 @@ def input(bot, update, args):
     for i in range(0, (len(args) // 2)):  # For Catching it's number or not
         try:
             int(args[(i * 2) + 1])  # Change String to Number for checking
-        except:
+        except ValueError:
             return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
     if len(args) % 2 != 0 and str(args[-1])[0:1] != "#":  # Checking final thing is tag or not
         return bot.sendMessage(update.message.chat_id, text='올바르지 않은 입력입니다. /help를 참조해 주세요.')
@@ -164,6 +165,12 @@ def input(bot, update, args):
         else:
             cur.execute('INSERT INTO t_ledger VALUES("' + str(update.message.chat_id) + '", "' +
                         str(args[i * 2]) + '", "' + str(int(args[(i * 2) + 1])) + '")')
+        cur.execute('SELECT money FROM t_ledger WHERE room_id="' + str(update.message.chat_id) + '" and name="'
+                    + str(args[i * 2]) + '"')
+        current_money = int(cur.fetchone()[0])
+        if current_money == 0:
+            cur.execute('DELETE FROM t_ledger WHERE room_id="' + str(update.message.chat_id) + '" AND name="' +
+                        str(args[i]) + '"')
 
     cur.execute('INSERT INTO t_state VALUES("' + str(update.message.chat_id) + '", "일수", "' +
                 str(args[0:]) + '", date("now","localtime"))')
@@ -195,7 +202,7 @@ def dutch(bot, update, args):
 
     try:
         target_money = int(args[len(args) - 1])  # Change String(target money) to Number for checking
-    except:
+    except ValueError:
         return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
 
     persons = args[0:len(args) - 1]
@@ -221,7 +228,7 @@ def dutch(bot, update, args):
             return bot.sendMessage(update.message.chat_id, text='다음과 같이 입력하시겠습니까?',
                                    reply_markup=reply_markup)
 
-
+    '''  # doesn't use now
 def button(bot, update):
     query = update.callback_query
 
@@ -231,7 +238,7 @@ def button(bot, update):
                         chat_id=query.message.chat_id,
                         message_id=query.message.message_id)
 
-    '''
+
     # Connect to DB file
     con = sqlite3.connect(FILE_LOCATION)
     cur = con.cursor()
@@ -252,7 +259,6 @@ def button(bot, update):
     except:
         return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
     '''
-
 
 
 # It will be performed when you type, /조회
@@ -510,8 +516,9 @@ def cancel(bot, update):
     if str(cur.fetchone()[0]) != str(update.message.from_user.id):
         return
 
-    cur.execute('SELECT stopchecker, owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
-    fetched_list = cur.fetchone()
+    # I just comment it (Because I think it's not necessary)
+    # cur.execute('SELECT stopchecker, owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
+    # fetched_list = cur.fetchone()
 
     cur.execute('UPDATE t_room SET stopchecker=0 WHERE room_id="' + str(update.message.chat_id) + '"')
     con.commit()
@@ -523,6 +530,7 @@ def cancel(bot, update):
 
 def error(bot, update, error):
     logger.warn('Update "%s" caused error "%s"' % (update, error))
+
 
 #
 # MAIN PARTS
@@ -536,19 +544,19 @@ def main():
     updater = Updater(TOKEN)
     dp = updater.dispatcher
 
-    dp.addHandler(CommandHandler("start", start))
-    dp.addHandler(CommandHandler("help", help))
-    dp.addHandler(CommandHandler(EXEC_LIST[0][0], input, pass_args=True))
-    dp.addHandler(CommandHandler(EXEC_LIST[1][0], dutch, pass_args=True))
-    dp.addHandler(CommandHandler(EXEC_LIST[2][0], view))
-    dp.addHandler(CommandHandler(EXEC_LIST[3][0], latest))
-    dp.addHandler(CommandHandler(EXEC_LIST[4][0], remove, pass_args=True))
-    dp.addHandler(CommandHandler(EXEC_LIST[5][0], account, pass_args=True))
-    dp.addHandler(CommandHandler(EXEC_LIST[6][0], reset))
-    dp.addHandler(CommandHandler("stop", stop))
-    dp.addHandler(CommandHandler("confirm", confirm))
-    dp.addHandler(CommandHandler("cancel", cancel))
-    dp.addErrorHandler(error)
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("help", support))
+    dp.add_handler(CommandHandler(EXEC_LIST[0][0], add, pass_args=True))
+    dp.add_handler(CommandHandler(EXEC_LIST[1][0], dutch, pass_args=True))
+    dp.add_handler(CommandHandler(EXEC_LIST[2][0], view))
+    dp.add_handler(CommandHandler(EXEC_LIST[3][0], latest))
+    dp.add_handler(CommandHandler(EXEC_LIST[4][0], remove, pass_args=True))
+    dp.add_handler(CommandHandler(EXEC_LIST[5][0], account, pass_args=True))
+    dp.add_handler(CommandHandler(EXEC_LIST[6][0], reset))
+    dp.add_handler(CommandHandler("stop", stop))
+    dp.add_handler(CommandHandler("confirm", confirm))
+    dp.add_handler(CommandHandler("cancel", cancel))
+    dp.add_error_handler(error)
 
     updater.start_polling()
     updater.idle()
