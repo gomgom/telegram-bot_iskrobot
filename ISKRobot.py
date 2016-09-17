@@ -1,9 +1,9 @@
 """
  ISKRobot(Il-Su-KKun Robot) (일수꾼봇)
 
- Created by Gomgom (https://gom2.net)
- Final released: 2016-07-23
- Version: v1.5.2
+ Created by Gomgom (https://gomgom.io)
+ Final released: 2016-09-17
+ Version: v1.6.0
 """
 
 #
@@ -16,17 +16,14 @@ import random
 import logging
 from telegram.ext import Updater, CommandHandler
 from telegram import Emoji, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardHide
-'''
-from telegram.ext import CallbackQueryHandler
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-'''
+
 
 #
 # DEFINE PARTS
 #
 #
 # exec has some information of commands and instructions
-EXEC_LIST = (("일수", "[이름 금액 ... #내용]\n\t\t\t빚을 추가/삭제합니다.\n\t\t\t마지막에 '#내용' 추가 가능.\n\
+EXEC_LIST = (("일수", "[이름 금액 ... #내용]\n\t\t\t빚을 추가/변제(-)합니다.\n\t\t\t마지막에 '#내용' 추가 가능.\n\
                 \t\t\t단, 태그는 띄어쓰기 불가."),
              ("더치", "[이름... 금액]\n\t\t\t비용을 1/n으로 나눠 추가합니다."),
              ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."),
@@ -34,14 +31,6 @@ EXEC_LIST = (("일수", "[이름 금액 ... #내용]\n\t\t\t빚을 추가/삭제
              ("상환", "[이름 ...]\n\t\t\t목록을 삭제합니다."),
              ("계좌", "[정보]\n\t\t\t계좌주, 은행, 번호등을 추가합니다."),
              ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
-
-# Checking parameters is or not, if there is, it's put in TOKEN(It's token of this bot))
-# Sample exec: python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11
-if len(sys.argv) != 2:
-    print("토큰이 입력되지 않았습니다. 매개변수에 TOKEN을 입력해 주세요.")
-    sys.exit()
-TOKEN = str(sys.argv[1])
-print("토큰 초기화가 완료되었습니다. 봇을 시작합니다.")
 
 # It's the location of DB file
 FILE_LOCATION = os.path.dirname(__file__) + '/debt.db'
@@ -55,10 +44,53 @@ logger = logging.getLogger(__name__)
 # FUNCTION PARTS
 #
 #
+# check_token() will perform input or update (if exists) TOKEN in DB
+# Checking parameters is or not, if there is, it's put in TOKEN(It's token of this bot))
+# Sample exec: python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11
+def check_token():
+    # Connect to DB file
+    con = sqlite3.connect(FILE_LOCATION)
+    cur = con.cursor()
+
+    cur.execute('SELECT COUNT(*) FROM t_admin')
+
+    if len(sys.argv) > 2:  # arguments are weird
+        print("인수 입력이 잘못되었습니다. 토큰만 입력이 가능합니다.")
+        sys.exit()
+    elif cur.fetchone()[0] == 0:  # if there isn't any token key on t_admin table
+        if len(sys.argv) == 2:  # for input token key
+            cur.execute('INSERT INTO t_admin VALUES("' + str(sys.argv[1]) + '")')
+            con.commit()
+            print("토큰 저장이 완료되었습니다. 봇을 시작합니다.")
+            cur.execute('SELECT token_key FROM t_admin')
+            result_token = str(cur.fetchone()[0])
+            con.close()
+            return result_token
+        else:
+            print("저장되어 있는 토큰이 없습니다. 매개변수에 TOKEN을 입력해 주세요.")
+            sys.exit()
+    else:  # if there is a token key on t_admin table
+        if len(sys.argv) == 1:  # just start Il-su-kkun bot
+            cur.execute('SELECT token_key FROM t_admin')
+            result_token = str(cur.fetchone()[0])
+            con.close()
+            print("저장된 토큰을 사용합니다. 봇을 시작합니다.")
+            return result_token
+        else:  # update token key on DB
+            cur.execute('UPDATE t_admin SET token_key="' + str(sys.argv[1]) + '"')
+            con.commit()
+            print("토큰이 업데이트 되었습니다. 봇을 시작합니다.")
+            cur.execute('SELECT token_key FROM t_admin')
+            result_token = str(cur.fetchone()[0])
+            con.close()
+            return result_token
+
+
 # reset_db() will perform make DB if not exists
 def reset_db():
     con = sqlite3.connect(FILE_LOCATION)
     cur = con.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS t_admin (token_key text)")
     cur.execute("CREATE TABLE IF NOT EXISTS t_room (room_id text, owner text, account text, stopchecker int)")
     cur.execute("CREATE TABLE IF NOT EXISTS t_ledger (room_id text, name text, money int)")
     cur.execute("CREATE TABLE IF NOT EXISTS t_state (room_id text, command text, state text, date datetime)")
@@ -228,38 +260,6 @@ def dutch(bot, update, args):
             return bot.sendMessage(update.message.chat_id, text='다음과 같이 입력하시겠습니까?',
                                    reply_markup=reply_markup)
 
-    '''  # doesn't use now
-def button(bot, update):
-    query = update.callback_query
-
-    input()
-
-    bot.editMessageText(text="Selected option: %s" % query.data,
-                        chat_id=query.message.chat_id,
-                        message_id=query.message.message_id)
-
-
-    # Connect to DB file
-    con = sqlite3.connect(FILE_LOCATION)
-    cur = con.cursor()
-
-    # Check this chat room is registered, if not, just return
-    cur.execute('SELECT COUNT(*) FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
-    if int(cur.fetchone()[0]) == 0:
-        return bot.sendMessage(update.message.chat_id,
-                               text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *',
-                               disable_notification=True)
-    # Check you're admin or not of this room
-    cur.execute('SELECT owner FROM t_room WHERE room_id="' + str(update.message.chat_id) + '"')
-    if str(cur.fetchone()[0]) != str(update.message.from_user.id):
-        return bot.sendMessage(update.message.chat_id, text='내 주인님이 아니에요..-_-+', disable_notification=True)
-
-    try:
-        int(args[-1])  # Change String to Number for checking
-    except:
-        return bot.sendMessage(update.message.chat_id, text='금액에는 숫자만 입력할 수 있습니다.')
-    '''
-
 
 # It will be performed when you type, /조회
 def view(bot, update):
@@ -398,6 +398,7 @@ def reset(bot, update):
     con.close()
 
 
+# It will perform write account status on every '/조회'
 def account(bot, update, args):
     # Connect to DB file
     con = sqlite3.connect(FILE_LOCATION)
@@ -453,39 +454,6 @@ def stop(bot, update):
         bot.sendMessage(update.message.chat_id, text='정말로 사용을 정지하시겠습니까?', reply_markup=reply_markup)
 
     con.close()
-
-
-''' (for Inline Keyboard, doesn't need now)
-def stop_confirm(bot, update):
-    query = update.callback_query
-
-    # Connect to DB file
-    con = sqlite3.connect(FILE_LOCATION)
-    cur = con.cursor()
-
-    cur.execute('SELECT stopchecker, owner FROM t_room WHERE room_id="' + str(query.message.chat_id) + '"')
-    fetched_list = cur.fetchone()
-
-    if query.data == 'confirm':
-        cur.execute('DELETE FROM t_ledger WHERE room_id="' + str(query.message.chat_id) + '"')
-        cur.execute('DELETE FROM t_room WHERE room_id="' + str(query.message.chat_id) + '"')
-        con.commit()
-        con.close()
-        #reply_markup = ReplyKeyboardHide()
-        return bot.sendMessage(chat_id=query.message.chat_id,
-                               text='이용을 중지합니다. 감사합니다.\n재이용은 다시 /start를 입력해 주세요.')
-    if query.data == 'cancel':
-        cur.execute('UPDATE t_room SET stopchecker=0 WHERE room_id="' + str(query.message.chat_id) + '"')
-        con.commit()
-        con.close()
-        #reply_markup = ReplyKeyboardHide()
-        return bot.sendMessage(chat_id=query.message.chat_id, text='취소되었습니다.', disable_notification=True)
-
-
-#    bot.editMessageText(text="Selected option: %s" % query.data,
-#                        chat_id=query.message.chat_id,
-#                        message_id=query.message.message_id)
-'''
 
 
 def confirm(bot, update):
@@ -545,6 +513,9 @@ def error(bot, update, error):
 def main():
     # Reset Databases
     reset_db()
+
+    # Check Token key for start bot
+    TOKEN = check_token()
 
     # Make Telegram bot updater
     updater = Updater(TOKEN)
