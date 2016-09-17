@@ -1,5 +1,5 @@
-# ISKRobot ver 1.5.2 with Docker
-#  (Dockerfile Version: 1.4)
+# ISKRobot ver 1.6.0 with Docker
+#  (Dockerfile Version: 1.6.0)
 FROM python:3.6-slim
 MAINTAINER Gomgom "contact@gom2.net"
 
@@ -9,5 +9,6 @@ RUN pip3 install python-telegram-bot &&\
 
 # Add Programs
 ADD ISKRobot.py /usr/local/ISKRobot/
+#ADD debt.db /usr/local/ISKRobot/
 WORKDIR /usr/local/ISKRobot
 CMD python3 ./ISKRobot.py $TOKENKEY

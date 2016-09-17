@@ -2,7 +2,7 @@
  ISKRobot(Il-Su-KKun Robot) (일수꾼봇)
 
  Created by Gomgom (https://gomgom.io)
- Final released: 2016-09-17
+ Final released: 2016-09-18
  Version: v1.6.0
 """
 
@@ -27,7 +27,7 @@ EXEC_LIST = (("일수", "[이름 금액 ... #내용]\n\t\t\t빚을 추가/변제
                 \t\t\t단, 태그는 띄어쓰기 불가."),
              ("더치", "[이름... 금액]\n\t\t\t비용을 1/n으로 나눠 추가합니다."),
              ("조회", "[ ]\n\t\t\t현재 빚 상황을 조회합니다."),
-             ("명세", "[ ]\n\t\t\t최근 기록 내역을 조회합니다."),
+             ("명세", "[조회갯수]\n\t\t\t최근 기록 내역을 조회합니다.\n\t\t\t최대 30건의 조회가 가능합니다."),
              ("상환", "[이름 ...]\n\t\t\t목록을 삭제합니다."),
              ("계좌", "[정보]\n\t\t\t계좌주, 은행, 번호등을 추가합니다."),
              ("초기화", "[ ]\n\t\t\t모든 빚을 초기화합니다."))
@@ -44,6 +44,18 @@ logger = logging.getLogger(__name__)
 # FUNCTION PARTS
 #
 #
+# reset_db() will perform make DB if not exists
+def reset_db():
+    con = sqlite3.connect(FILE_LOCATION)
+    cur = con.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS t_admin (token_key text)")
+    cur.execute("CREATE TABLE IF NOT EXISTS t_room (room_id text, owner text, account text, stopchecker int)")
+    cur.execute("CREATE TABLE IF NOT EXISTS t_ledger (room_id text, name text, money int)")
+    cur.execute("CREATE TABLE IF NOT EXISTS t_state (room_id text, command text, state text, date datetime)")
+    con.commit()
+    con.close()
+
+
 # check_token() will perform input or update (if exists) TOKEN in DB
 # Checking parameters is or not, if there is, it's put in TOKEN(It's token of this bot))
 # Sample exec: python ISKRobot.py 12345678:A1B2C3D4E5F6G7H8i9_j10k11
@@ -84,18 +96,6 @@ def check_token():
             result_token = str(cur.fetchone()[0])
             con.close()
             return result_token
-
-
-# reset_db() will perform make DB if not exists
-def reset_db():
-    con = sqlite3.connect(FILE_LOCATION)
-    cur = con.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS t_admin (token_key text)")
-    cur.execute("CREATE TABLE IF NOT EXISTS t_room (room_id text, owner text, account text, stopchecker int)")
-    cur.execute("CREATE TABLE IF NOT EXISTS t_ledger (room_id text, name text, money int)")
-    cur.execute("CREATE TABLE IF NOT EXISTS t_state (room_id text, command text, state text, date datetime)")
-    con.commit()
-    con.close()
 
 
 # makeNumToMoney() will perform money will be shown like this (7500000 -> 7,500,000)
@@ -295,7 +295,7 @@ def view(bot, update):
 
 
 # It will be performed when you type, /명세, it shows your states.
-def latest(bot, update):
+def latest(bot, update, args):
     # Connect to DB file
     con = sqlite3.connect(FILE_LOCATION)
     cur = con.cursor()
@@ -307,8 +307,23 @@ def latest(bot, update):
                                text='* 이 방에서 초기화가 되지 않았습니다.\n/start를 통해 초기화 후 이용해 주세요. *',
                                disable_notification=True)
 
-    # Get latest list of your statements (limit 10)
-    cur.execute('SELECT * FROM t_state WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY date desc limit 10')
+    # Get latest list of your statements
+    if len(args) == 0:
+        length = "10"  # basic length
+    elif len(args) == 1:
+        try:
+            if int(args[0]) > 30:  # Change String(latest number) to Number for checking
+                length = "30"  # maximum count
+            else:
+                length = args[0]  # user's length
+        except ValueError:
+            return bot.sendMessage(update.message.chat_id, text='조회 갯수에는 숫자만 입력할 수 있습니다.')
+    else:
+        return bot.sendMessage(update.message.chat_id, text='너무 많은 인수가 입력되었습니다.')
+
+    cur.execute(
+        'SELECT * FROM t_state WHERE room_id="' + str(update.message.chat_id) +
+        '" ORDER BY date desc limit ' + length)
     fetched_list = cur.fetchall()
 
     result = "\n\n" + ("#" * 19) + "\n"
@@ -324,8 +339,9 @@ def latest(bot, update):
 
     cur.execute('SELECT * FROM t_state WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY date desc limit 1')
     try:
-        bot.sendMessage(update.message.chat_id, text='최근 명세서입니다. (' + str(cur.fetchone()[3])[5:] + ' 기준)' +
-                        result, disable_notification=True)
+        bot.sendMessage(update.message.chat_id, text='최근 ' + length + ' 건의 변경내역입니다.\n(' +
+                                                     str(cur.fetchone()[3])[5:] + ' 기준)' +
+                                                     result, disable_notification=True)
     except TypeError:
         bot.sendMessage(update.message.chat_id, text='보여드릴 조회/내역이 없습니다.', disable_notification=True)
     con.close()
@@ -526,7 +542,7 @@ def main():
     dp.add_handler(CommandHandler(EXEC_LIST[0][0], add, pass_args=True))
     dp.add_handler(CommandHandler(EXEC_LIST[1][0], dutch, pass_args=True))
     dp.add_handler(CommandHandler(EXEC_LIST[2][0], view))
-    dp.add_handler(CommandHandler(EXEC_LIST[3][0], latest))
+    dp.add_handler(CommandHandler(EXEC_LIST[3][0], latest, pass_args=True))
     dp.add_handler(CommandHandler(EXEC_LIST[4][0], remove, pass_args=True))
     dp.add_handler(CommandHandler(EXEC_LIST[5][0], account, pass_args=True))
     dp.add_handler(CommandHandler(EXEC_LIST[6][0], reset))
