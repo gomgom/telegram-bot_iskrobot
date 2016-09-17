@@ -3,7 +3,7 @@
 
  Created by Gomgom (https://gomgom.io)
  Final released: 2016-09-18
- Version: v1.6.0
+ Version: v1.6.1
 """
 
 #
@@ -339,7 +339,7 @@ def latest(bot, update, args):
 
     cur.execute('SELECT * FROM t_state WHERE room_id="' + str(update.message.chat_id) + '" ORDER BY date desc limit 1')
     try:
-        bot.sendMessage(update.message.chat_id, text='최근 ' + length + ' 건의 변경내역입니다.\n(' +
+        bot.sendMessage(update.message.chat_id, text='최근 ' + str(len(fetched_list)) + ' 건의 변경내역입니다.\n(' +
                                                      str(cur.fetchone()[3])[5:] + ' 기준)' +
                                                      result, disable_notification=True)
     except TypeError:

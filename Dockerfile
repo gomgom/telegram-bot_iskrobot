@@ -1,5 +1,5 @@
-# ISKRobot ver 1.6.0 with Docker
-#  (Dockerfile Version: 1.6.0)
+# ISKRobot ver 1.6.1 with Docker
+#  (Dockerfile Version: 1.6.1)
 FROM python:3.6-slim
 MAINTAINER Gomgom "contact@gom2.net"
 

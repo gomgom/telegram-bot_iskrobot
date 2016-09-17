@@ -2,7 +2,7 @@
 #
 # It's just shell script for running ISKRobot docker
 #
-VER=1.6.0;
+VER=1.6.1;
 
 sudo docker stop iskrobot;
 sudo docker rm iskrobot;
