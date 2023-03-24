@@ -123,7 +123,7 @@ Docker가 설치되어 있는 리눅스 콘솔에서 본 Git 저장소를 다운
 
 
 ## 기타 자세한 정보
-https://blog.gomgom.io/page-about-iskrobot/ 에서 자세하게 다룰 예정입니다.
+https://blog.gomgom.net/page-about-iskrobot/ 에서 자세하게 다룰 예정입니다.
 
 
 
